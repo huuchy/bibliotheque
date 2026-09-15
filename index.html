@@ -1,0 +1,2100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a2233">
+<meta name="referrer" content="no-referrer">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>Bibliothèque</title>
+<style>
+:root{
+  --ink:#1a2233;
+  --ink-2:#232d42;
+  --ink-3:#2f3b55;
+  --paper:#efe9dc;
+  --muted:#9aa4b8;
+  --yellow:#f2c230;
+  --cyan:#3fb7c9;
+  --display:Bahnschrift,"DIN Alternate","Avenir Next Condensed","Arial Narrow",sans-serif;
+  --ui:"Avenir Next","Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{
+  background-color:var(--ink);
+  background-image:radial-gradient(rgba(255,255,255,.035) 1px,transparent 1.2px);
+  background-size:7px 7px;
+  color:var(--paper);font-family:var(--ui);font-size:15px;line-height:1.45;
+  -webkit-tap-highlight-color:transparent;
+}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* ---------- Bibliothèque ---------- */
+header{
+  position:sticky;top:0;z-index:5;background:var(--ink);border-bottom:3px solid var(--yellow);
+  padding:12px clamp(14px,3vw,36px);padding-top:max(12px,env(safe-area-inset-top));
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;
+}
+h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0 auto 0 0;line-height:1}
+h1 small{font-family:var(--ui);font-size:13px;font-weight:400;color:var(--muted);margin-left:10px}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{background:var(--ink-3);border:0;border-radius:4px;padding:8px 13px;cursor:pointer}
+.btn:hover{background:#3a486a}
+.btn:disabled{opacity:.6;cursor:default}
+.btn.primary{background:var(--yellow);color:var(--ink);font-weight:600}
+.btn.primary:hover{background:#ffd34d}
+input[type=search],select{background:var(--ink-2);border:1px solid var(--ink-3);border-radius:4px;padding:7px 10px}
+input[type=search]{width:220px}
+main{padding:22px clamp(14px,3vw,36px) 60px}
+
+h2.rayon{font-family:var(--display);font-size:22px;margin:36px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--ink-3)}
+h2.rayon:first-child{margin-top:0}
+h2.rayon.reprendre{color:var(--yellow);border-bottom-color:var(--yellow)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:28px 22px}
+.rangee{
+  display:grid;grid-auto-flow:column;grid-auto-columns:150px;gap:22px;
+  overflow-x:auto;padding-bottom:10px;scroll-snap-type:x proximity;scrollbar-width:thin;
+}
+
+.book{background:none;border:0;padding:0;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:7px;min-width:0}
+.cover{
+  position:relative;aspect-ratio:2/3;width:100%;background:var(--ink-2);border-radius:2px;overflow:hidden;
+  box-shadow:0 1px 0 rgba(255,255,255,.06),0 10px 18px -8px rgba(0,0,0,.7);
+}
+.cover img{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;display:block}
+.cover .progress,.cover .badge,.compteur{z-index:2}
+.cover .ph{position:absolute;inset:0;background:linear-gradient(160deg,var(--ink-2),var(--ink-3))}
+.book:hover .cover{outline:3px solid var(--yellow)}
+.progress{position:absolute;left:0;right:0;bottom:0;height:5px;background:rgba(0,0,0,.55)}
+.progress i{display:block;height:100%;background:var(--cyan)}
+.badge{position:absolute;top:6px;right:6px;background:var(--cyan);color:var(--ink);font-size:12px;font-weight:700;padding:2px 7px;border-radius:3px}
+.book .t{font-weight:600;font-size:14px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.book .m{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.bascule{display:flex}
+.bascule .btn{border-radius:0}
+.bascule .btn:first-child{border-radius:4px 0 0 4px}
+.bascule .btn:last-child{border-radius:0 4px 4px 0}
+.bascule .btn[aria-pressed=true]{background:var(--cyan);color:var(--ink);font-weight:600}
+h2.rayon .nb{font-family:var(--ui);font-size:13px;font-weight:400;color:var(--muted);margin-left:10px}
+
+.liste{display:flex;flex-direction:column;max-width:920px;border-top:1px solid var(--ink-3)}
+.ligne{
+  position:relative;display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 16px;
+  padding:12px 6px;background:none;border:0;border-bottom:1px solid var(--ink-3);text-align:left;cursor:pointer;
+}
+.ligne:hover{background:var(--ink-2)}
+.ligne .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ligne .s{grid-column:1;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ligne .st{grid-column:2;grid-row:1 / span 2;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ligne .st.lu{color:var(--cyan);font-weight:600}
+.ligne .st.cours{color:var(--paper)}
+.ligne .barre{position:absolute;left:0;bottom:-1px;height:2px;background:var(--cyan)}
+
+.ligne{padding-left:calc(6px + var(--niv, 0) * 22px)}
+.dossier{
+  display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:2px 10px;width:100%;
+  padding:13px 6px;padding-left:calc(6px + var(--niv, 0) * 22px);
+  background:none;border:0;border-bottom:1px solid var(--ink-3);text-align:left;cursor:pointer;position:relative;
+}
+.dossier:hover{background:var(--ink-2)}
+.dossier .chev{grid-row:1 / span 2;font-size:14px;color:var(--yellow);transition:transform .15s}
+.dossier[aria-expanded=true] .chev{transform:rotate(90deg)}
+.dossier .n{font-family:var(--display);font-size:18px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dossier .s{grid-column:2;font-size:12px;color:var(--muted)}
+.dossier .st{grid-column:3;grid-row:1 / span 2;font-size:13px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.dossier .st.lu{color:var(--cyan);font-weight:600}
+.dossier .barre{position:absolute;left:0;bottom:-1px;height:2px;background:var(--cyan);opacity:.6}
+.sous{display:flex;flex-direction:column;background:rgba(0,0,0,.12)}
+.outils-liste{display:flex;gap:8px;margin:0 0 12px}
+.outils-liste .btn{padding:5px 11px;font-size:13px}
+
+/* Vue couvertures : dossiers en piles + fil d'Ariane */
+.grid{padding-top:8px}
+.pile{position:relative}
+.pile::before,.pile::after{content:"";position:absolute;inset:0;border-radius:2px;z-index:0}
+.pile::before{background:var(--ink-3);transform:translate(8px,-8px)}
+.pile::after{background:#3d4b6c;transform:translate(4px,-4px)}
+.pile .cover{z-index:1}
+.compteur{
+  position:absolute;left:6px;bottom:10px;background:var(--yellow);color:var(--ink);
+  font-size:12px;font-weight:700;padding:2px 7px;border-radius:3px;
+}
+.carte-dossier .t{font-family:var(--display);font-size:16px}
+.fil{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin:0 0 4px;font-size:14px}
+.fil .btn{padding:5px 11px;margin-right:6px}
+.fil .lien{background:none;border:0;padding:4px 2px;color:var(--muted);cursor:pointer}
+.fil .lien:hover{color:var(--paper);text-decoration:underline}
+.fil .sep{color:var(--muted)}
+.fil .ici{font-weight:600}
+
+/* Profils */
+.profil-btn{display:flex;align-items:center;gap:8px;background:var(--ink-2);border:0;border-radius:22px;padding:4px 14px 4px 4px;cursor:pointer;font-weight:600}
+.profil-btn:hover{background:var(--ink-3)}
+.avatar{
+  display:grid;place-items:center;flex:none;width:104px;height:104px;border-radius:22px;
+  font-family:var(--display);font-weight:700;font-size:54px;color:var(--ink);line-height:1;
+}
+.avatar.petit{width:32px;height:32px;border-radius:50%;font-size:17px}
+#ecranGoogle,#ecranProfils{
+  position:fixed;inset:0;z-index:30;overflow-y:auto;
+  background-color:var(--ink);
+  background-image:radial-gradient(rgba(255,255,255,.035) 1px,transparent 1.2px);background-size:7px 7px;
+  display:flex;flex-direction:column;align-items:center;padding:max(8vh,24px) 20px 40px;
+}
+#ecranGoogle h2,#ecranProfils h2{font-family:var(--display);font-size:clamp(36px,8vw,56px);margin:0 0 6px;text-align:center}
+#ecranGoogle .aide,#ecranProfils .aide{color:var(--muted);margin:0 0 30px;text-align:center}
+.tuiles{display:flex;flex-wrap:wrap;justify-content:center;gap:26px 22px;max-width:760px}
+.tuile{
+  background:none;border:0;padding:6px;border-radius:10px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:9px;width:128px;text-align:center;
+}
+.tuile:hover .avatar,.tuile:focus-visible .avatar{outline:3px solid var(--paper);outline-offset:4px}
+.tuile:focus-visible{outline:none}
+.tuile .nom{font-weight:600;font-size:17px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tuile .info{font-size:12px;color:var(--muted);margin-top:-6px}
+.tuile.ajout .avatar{background:none;border:3px dashed var(--ink-3);color:var(--muted);font-family:var(--ui);font-weight:300}
+.tuile.ajout:hover .avatar{border-color:var(--yellow);color:var(--yellow);outline:none}
+.tuile.actuel .avatar{box-shadow:0 0 0 3px var(--ink),0 0 0 6px var(--paper)}
+.gestion .tuile{cursor:default}
+.gestion .tuile:hover .avatar{outline:none}
+.gestion .tuile .avatar{opacity:.6}
+.actions-tuile{display:flex;flex-direction:column;gap:6px;width:100%}
+.actions-tuile .btn{padding:6px 8px;font-size:13px;width:100%}
+.actions-tuile .btn.danger:hover{background:#8a3a3a}
+.pied-profils{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:34px}
+#formProfil{display:flex;flex-direction:column;gap:10px;width:min(340px,100%);margin-top:30px}
+#formProfil label{font-weight:600}
+#formProfil input{background:var(--ink-2);border:1px solid var(--ink-3);border-radius:4px;padding:11px 12px;font-size:18px}
+#formProfil .ligne-btn{display:flex;gap:8px}
+#formProfil .ligne-btn .btn{flex:1;padding:10px}
+.erreur{color:#ef8f86;margin:0;min-height:1.2em;font-size:14px}
+
+/* Retirer de « Reprendre la lecture » */
+.rayon.reprendre{display:flex;align-items:baseline;gap:10px}
+.rayon .vider{margin-left:auto;font-family:var(--ui);font-size:13px;font-weight:400;padding:4px 11px}
+.reprise-item{position:relative;min-width:0;scroll-snap-align:start}
+.retirer{
+  position:absolute;top:6px;right:6px;z-index:3;width:30px;height:30px;padding:0;
+  display:grid;place-items:center;border-radius:50%;border:2px solid rgba(0,0,0,.35);
+  background:rgba(26,34,51,.88);color:var(--paper);font-size:13px;cursor:pointer;
+}
+.retirer:hover{background:#8a3a3a}
+.liste .reprise-item{display:flex;align-items:stretch;border-bottom:1px solid var(--ink-3)}
+.liste .reprise-item .ligne{flex:1;min-width:0;border-bottom:0}
+.liste .reprise-item .retirer{
+  position:static;flex:none;width:46px;height:auto;border:0;border-radius:0;background:none;color:var(--muted);font-size:15px;
+}
+.liste .reprise-item .retirer:hover{background:var(--ink-2);color:#ef8f86}
+#toast{
+  position:fixed;left:0;right:0;bottom:max(18px,env(safe-area-inset-bottom));z-index:25;
+  margin:0 auto;width:fit-content;max-width:calc(100% - 24px);
+  display:flex;align-items:center;gap:14px;
+  background:var(--paper);color:var(--ink);padding:10px 10px 10px 16px;border-radius:6px;
+  box-shadow:0 8px 24px rgba(0,0,0,.45);font-size:14px;
+}
+#toast .btn{background:var(--ink);color:var(--paper);font-weight:600;flex:none}
+
+/* Connexion Google */
+#ecranGoogle{z-index:35;justify-content:center}
+#ecranGoogle .aide{max-width:440px}
+.btn.grand{font-size:17px;padding:13px 22px}
+#formDossier{display:flex;flex-direction:column;gap:10px;width:min(460px,100%)}
+#formDossier label{font-weight:600}
+#formDossier input{background:var(--ink-2);border:1px solid var(--ink-3);border-radius:4px;padding:11px 12px;font-size:16px}
+.aide-champ{color:var(--muted);font-size:13px;margin:0}
+#bandeauSession{
+  position:fixed;top:0;left:0;right:0;z-index:40;display:flex;justify-content:center;align-items:center;gap:14px;
+  padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));background:var(--paper);color:var(--ink);font-weight:600;
+}
+
+.etat{max-width:520px;margin:12vh auto;text-align:center}
+.etat h2{font-family:var(--display);font-size:32px;margin:0 0 8px}
+.etat p{color:var(--muted);margin:0 0 20px}
+
+dialog{
+  background:var(--ink-2);color:var(--paper);border:0;border-top:4px solid var(--yellow);
+  border-radius:6px;padding:24px 26px;max-width:420px;width:calc(100% - 32px);
+}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+dialog h2{font-family:var(--display);font-size:26px;margin:0 0 12px}
+dialog p{color:var(--muted);margin:0 0 12px}
+dialog form{text-align:right;margin-top:8px}
+.url{display:block;font-size:20px;font-weight:600;color:var(--yellow);word-break:break-all;margin:4px 0 14px}
+#qr{display:block;background:#fff;padding:10px;width:200px;height:200px;margin:4px auto 16px;border-radius:4px}
+
+/* ---------- Liseuse ---------- */
+#reader{position:fixed;inset:0;z-index:20;background:#000;display:none;flex-direction:column}
+#reader.open{display:flex}
+.bar{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;
+  background:rgba(26,34,51,.95);transition:opacity .2s,transform .2s;z-index:3;
+}
+.bar.top{border-bottom:2px solid var(--yellow);padding-top:max(8px,env(safe-area-inset-top))}
+.bar.bottom{position:absolute;left:0;right:0;bottom:0;padding-bottom:max(8px,env(safe-area-inset-bottom))}
+#reader.hide-ui .bar{opacity:0;pointer-events:none}
+#reader.hide-ui .bar.top{transform:translateY(-100%)}
+#reader.hide-ui .bar.bottom{transform:translateY(100%)}
+.bar .title{font-weight:600;margin-right:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:40vw}
+.bar .btn{padding:6px 10px}
+.bar .btn.on{background:var(--cyan);color:var(--ink)}
+.bar.bottom input[type=range]{flex:1;accent-color:var(--yellow);min-width:0}
+#pageLabel{min-width:74px;text-align:right;font-variant-numeric:tabular-nums}
+
+#stage{flex:1;position:relative;overflow:hidden;display:flex;justify-content:center;align-items:center}
+#stage.rtl{flex-direction:row-reverse}
+#stage img{display:block;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
+#stage.fit-height img{max-height:100%;max-width:100%}
+#stage.double.fit-height img{max-width:50%}
+#stage.fit-width{overflow:auto;align-items:flex-start}
+#stage.fit-width img{width:100%;height:auto}
+#stage.fit-width.double img{width:50%}
+#stage.fit-original{overflow:auto;align-items:flex-start}
+#stage.fit-original img{max-width:none}
+.msg{color:var(--muted);padding:20px;text-align:center}
+
+#scroller{flex:1;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch}
+#scroller.on{display:block}
+#scroller .pg{max-width:900px;margin:0 auto;min-height:70vh;background:#0a0a0a}
+#scroller .pg.loaded{min-height:0;background:none}
+#scroller img{width:100%;display:block}
+
+.fin{
+  position:relative;z-index:2;max-width:420px;margin:auto;padding:28px;text-align:center;
+  display:flex;flex-direction:column;gap:12px;
+}
+.fin h3{font-family:var(--display);font-size:26px;margin:0}
+.fin p{color:var(--muted);margin:0 0 6px}
+#scroller .fin{padding:40px 20px 120px}
+
+.zone{position:absolute;top:0;bottom:0;width:30%;z-index:1;cursor:pointer}
+.zone.l{left:0}.zone.r{right:0}
+#stage.fit-width .zone,#stage.fit-original .zone{position:fixed;top:70px;bottom:70px}
+
+@media (max-width:640px){
+  .tuile{width:104px}
+  .avatar{width:88px;height:88px;font-size:46px;border-radius:18px}
+  .profil-btn{padding-right:4px}
+  .profil-btn #nomActuel{display:none}
+  h1{font-size:26px}
+  .tools{width:100%}
+  input[type=search]{flex:1 1 100%;width:auto;min-width:0}
+  .bascule{flex:1}
+  .bascule .btn{flex:1}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:20px 12px}
+  .rangee{grid-auto-columns:112px;gap:12px}
+  .book .t{font-size:13px}
+  .bar .title{max-width:100%;flex-basis:100%}
+  .bar select{flex:1;min-width:0}
+}
+@media (prefers-reduced-motion:reduce){.bar{transition:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="titre">Bibliothèque<small id="compte"></small></h1>
+  <button class="profil-btn" id="btnProfil" hidden title="Changer de profil">
+    <span class="avatar petit" id="avatarActuel"></span><span id="nomActuel"></span>
+  </button>
+  <div class="tools">
+    <input type="search" id="recherche" placeholder="Rechercher…" aria-label="Rechercher un titre ou une série">
+    <div class="bascule" role="group" aria-label="Affichage">
+      <button class="btn" data-vue="grille" aria-pressed="true">Couvertures</button>
+      <button class="btn" data-vue="liste" aria-pressed="false">Liste</button>
+    </div>
+    <button class="btn" id="btnActualiser">Actualiser</button>
+
+  </div>
+</header>
+
+<main id="etageres">
+  <div class="etat"><p></p></div>
+</main>
+
+<section id="ecranGoogle" hidden aria-labelledby="titreGoogle">
+  <h2 id="titreGoogle">Bibliothèque</h2>
+  <p class="aide" id="aideGoogle"></p>
+  <button class="btn primary grand" id="btnConnexion" hidden>Se connecter avec Google</button>
+  <form id="formDossier" hidden>
+    <label for="lienDossier">Lien du dossier Google Drive</label>
+    <input id="lienDossier" placeholder="https://drive.google.com/drive/folders/…" autocomplete="off" inputmode="url">
+    <p class="aide-champ">Dans Google Drive, ouvrez le dossier des mangas puis copiez l'adresse de la page.</p>
+    <p class="erreur" id="erreurDossier"></p>
+    <button class="btn primary">Ouvrir ce dossier</button>
+  </form>
+</section>
+
+<div id="bandeauSession" role="alert" hidden>
+  <span>Session Google expirée.</span>
+  <button class="btn primary" id="btnReconnecter">Reconnecter</button>
+</div>
+
+<section id="ecranProfils" hidden aria-labelledby="titreProfils">
+  <h2 id="titreProfils">Qui lit ?</h2>
+  <p class="aide" id="aideProfils"></p>
+  <div class="tuiles" id="tuiles"></div>
+  <form id="formProfil" hidden>
+    <label for="nomProfil" id="labelProfil">Prénom</label>
+    <input id="nomProfil" maxlength="24" autocomplete="off" autocapitalize="words" required>
+    <p class="erreur" id="erreurProfil"></p>
+    <div class="ligne-btn">
+      <button type="button" class="btn" id="annulerProfil">Annuler</button>
+      <button class="btn primary" id="validerProfil">Créer</button>
+    </div>
+  </form>
+  <div class="pied-profils">
+    <button class="btn" id="btnGerer" hidden>Gérer les profils</button>
+    <button class="btn" id="btnRetourBiblio" hidden>Retour à la bibliothèque</button>
+    <button class="btn" id="btnDossierDrive">Changer de dossier Drive</button>
+    <button class="btn" id="btnDeconnexion">Se déconnecter de Google</button>
+  </div>
+</section>
+
+<div id="toast" role="status" hidden>
+  <span id="toastMsg"></span>
+  <button class="btn" id="toastAnnuler">Annuler</button>
+</div>
+
+
+
+<div id="reader" role="dialog" aria-modal="true" aria-labelledby="rTitre">
+  <div class="bar top">
+    <span class="title" id="rTitre"></span>
+    <select id="selMode" aria-label="Mode de lecture">
+      <option value="single">Une page</option>
+      <option value="double">Double page</option>
+      <option value="scroll">Défilement vertical</option>
+    </select>
+    <select id="selFit" aria-label="Taille des pages">
+      <option value="height">Page entière</option>
+      <option value="width">Pleine largeur</option>
+      <option value="original">Taille réelle</option>
+    </select>
+    <button class="btn" id="btnRtl" title="Sens de lecture japonais (droite vers gauche)">Manga</button>
+    <button class="btn" id="btnFs" title="Plein écran (F)">Plein écran</button>
+    <button class="btn" id="btnFermer" title="Fermer (Échap)">Fermer</button>
+  </div>
+  <div id="stage" class="fit-height">
+    <div class="zone l" data-dir="left"></div>
+    <div class="zone r" data-dir="right"></div>
+  </div>
+  <div id="scroller"></div>
+  <div class="bar bottom">
+    <button class="btn" id="btnPrec" aria-label="Page de gauche">‹</button>
+    <input type="range" id="curseur" min="1" max="1" value="1" aria-label="Aller à la page">
+    <button class="btn" id="btnSuiv" aria-label="Page de droite">›</button>
+    <span id="pageLabel"></span>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const collator = new Intl.Collator('fr', {numeric: true, sensitivity: 'base'});
+const appareil = matchMedia('(pointer: coarse)').matches ? 'mobile' : 'ordinateur';
+
+let livres = [];
+let vue = 'grille';
+const ouverts = new Set();   // dossiers dépliés dans la vue liste
+let dossierCourant = '';     // dossier affiché dans la vue couvertures
+let fermetureEnCours = false;
+let prefsChargees = false;
+const R = {livre: null, total: 0, index: 0, step: 1, mode: 'single', fit: 'height', rtl: false, token: 0, fin: false};
+
+/* ======================================================================
+   CONFIGURATION : à remplir une seule fois (voir GUIDE.md)
+   ====================================================================== */
+const CONFIG = {
+  // Identifiant client OAuth créé dans Google Cloud (se termine par .apps.googleusercontent.com)
+  CLIENT_ID: '439532508115-1tkkvcl0ak1ol1543ik103hmiju6v2ro.apps.googleusercontent.com',
+  // Facultatif : lien du dossier Drive qui contient les mangas.
+  // Laissé vide, il est demandé à la première connexion puis mémorisé dans le compte Google.
+  DOSSIER: '',
+};
+
+/* ======================================================================
+   Accès Google Drive (remplace le serveur Python)
+   ====================================================================== */
+const PORTEES = ['https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/drive.appdata'];
+const DOSSIER_MIME = 'application/vnd.google-apps.folder';
+const API_DRIVE = 'https://www.googleapis.com/drive/v3/';
+const API_ENVOI = 'https://www.googleapis.com/upload/drive/v3/files';
+const FICHIER_DONNEES = 'bibliotheque-donnees.json';
+const COULEURS = ['#f2c230', '#3fb7c9', '#ef7a85', '#8fd16a', '#b79cff', '#ff9f43', '#5ea8ff', '#e6e1d3'];
+const IMG_RE = /\.(jpe?g|png|gif|webp|avif|bmp)$/i;
+const MIME_IMG = {jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', avif: 'image/avif', bmp: 'image/bmp'};
+const pause = ms => new Promise(r => setTimeout(r, ms));
+const maintenant = () => Math.floor(Date.now() / 1000);
+
+const G = {jeton: null, expire: 0, client: null, surJeton: null, surErreur: null, enCours: null};
+const D = {
+  racine: '', nomRacine: 'Bibliothèque',
+  livres: new Map(),        // id Drive -> livre
+  index: new Map(),         // id -> Promise<liste des pages>
+  couvertures: new Map(),   // id -> Promise<url>
+  couvSauvees: Promise.resolve(new Map()),
+  donnees: null, fichierDonnees: null, profilActuel: null,
+};
+
+/* ---------- Connexion ---------- */
+function chargerScriptGoogle(){
+  return new Promise((res, rej) => {
+    if (window.google?.accounts?.oauth2) return res();
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.async = true;
+    s.onload = res;
+    s.onerror = () => rej(new Error('Impossible de joindre Google. Vérifiez la connexion Internet.'));
+    document.head.append(s);
+  });
+}
+
+function initialiserClient(){
+  G.client = google.accounts.oauth2.initTokenClient({
+    client_id: CONFIG.CLIENT_ID,
+    scope: PORTEES.join(' '),
+    callback: r => G.surJeton && G.surJeton(r),
+    error_callback: e => G.surErreur && G.surErreur(e),
+  });
+}
+
+function demanderJeton(){
+  if (G.enCours) return G.enCours;
+  G.enCours = new Promise((res, rej) => {
+    G.surJeton = r => {
+      if (r.error) return rej(new Error(r.error_description || 'Connexion refusée.'));
+      if (!google.accounts.oauth2.hasGrantedAllScopes(r, ...PORTEES)) {
+        return rej(new Error("Il faut cocher toutes les autorisations demandées (lecture de Drive et données de l'application)."));
+      }
+      G.jeton = r.access_token;
+      G.expire = Date.now() + (Number(r.expires_in) - 60) * 1000;
+      $('bandeauSession').hidden = true;
+      res();
+    };
+    G.surErreur = e => rej(new Error(
+      e.type === 'popup_closed' ? 'La fenêtre de connexion a été fermée.' :
+      e.type === 'popup_failed_to_open' ? 'Le navigateur a bloqué la fenêtre de connexion : autorisez les fenêtres pop-up pour ce site.' :
+      'Connexion à Google impossible.'));
+    G.client.requestAccessToken({prompt: ''});
+  }).finally(() => { G.enCours = null; });
+  return G.enCours;
+}
+
+const jetonValide = () => G.jeton && Date.now() < G.expire;
+
+function sessionExpiree(){
+  if (!D.donnees) return;   // pas encore connecté : l'écran de connexion s'en charge
+  $('bandeauSession').hidden = false;
+}
+
+// La session Google dure une heure : on la renouvelle discrètement au prochain appui
+document.addEventListener('click', () => {
+  if (G.client && D.donnees && G.jeton && Date.now() > G.expire - 5 * 60 * 1000 && !G.enCours) {
+    demanderJeton().catch(() => sessionExpiree());
+  }
+}, true);
+
+/* ---------- Appels à l'API Drive ---------- */
+async function drive(chemin, o = {}){
+  const url = new URL(chemin.startsWith('https://') ? chemin : API_DRIVE + chemin);
+  for (const [k, v] of Object.entries(o.params || {})) {
+    if (v !== undefined && v !== null) url.searchParams.set(k, v);
+  }
+  for (let essai = 0; ; essai++) {
+    if (!jetonValide()) {
+      sessionExpiree();
+      throw new Error('Session Google expirée : touchez « Reconnecter ».');
+    }
+    const r = await fetch(url, {
+      method: o.method || 'GET',
+      body: o.body,
+      keepalive: !!o.keepalive,
+      headers: Object.assign({Authorization: 'Bearer ' + G.jeton}, o.headers || {}),
+    });
+    if (r.ok) {
+      if (o.brut) return r;
+      return r.status === 204 ? null : r.json();
+    }
+    if (r.status === 401) {
+      G.expire = 0;
+      sessionExpiree();
+      throw new Error('Session Google expirée : touchez « Reconnecter ».');
+    }
+    const texte = await r.text();
+    const surcharge = r.status === 429 || r.status >= 500 || (r.status === 403 && /rate ?limit/i.test(texte));
+    if (surcharge && essai < 4) { await pause(700 * 2 ** essai); continue; }
+    if (r.status === 404) throw new Error('Introuvable sur Google Drive (supprimé, ou pas partagé avec ce compte).');
+    let message = 'Erreur Google Drive ' + r.status;
+    try { message = JSON.parse(texte).error.message || message; } catch {}
+    throw new Error(message);
+  }
+}
+
+async function televerser(nom, blob, mime){
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify({name: nom, parents: ['appDataFolder'], mimeType: mime})], {type: 'application/json'}));
+  form.append('file', blob, nom);
+  return drive(API_ENVOI, {method: 'POST', params: {uploadType: 'multipart', fields: 'id'}, body: form});
+}
+
+/* ---------- Lecture des CBZ par morceaux ---------- */
+class FichierDrive {
+  constructor(id, taille){ this.id = id; this.size = taille; }
+  async lire(debut, fin){
+    debut = Math.max(0, debut);
+    fin = Math.min(this.size, fin);
+    if (fin <= debut) return new ArrayBuffer(0);
+    const r = await drive('files/' + this.id, {
+      params: {alt: 'media', supportsAllDrives: true},
+      headers: {Range: `bytes=${debut}-${fin - 1}`},
+      brut: true,
+    });
+    const buf = await r.arrayBuffer();
+    return r.status === 206 ? buf : buf.slice(debut, fin);
+  }
+}
+
+async function indexZip(f){
+  const longueur = Math.min(f.size, 65557);
+  const fin = new DataView(await f.lire(f.size - longueur, f.size));
+  let eocd = -1;
+  for (let i = longueur - 22; i >= 0; i--) {
+    if (fin.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("Ce fichier n'est pas un vrai CBZ.");
+  let tailleCD = fin.getUint32(eocd + 12, true);
+  let debutCD = fin.getUint32(eocd + 16, true);
+  if (debutCD === 0xFFFFFFFF || tailleCD === 0xFFFFFFFF) {
+    const loc = eocd - 20;
+    if (loc >= 0 && fin.getUint32(loc, true) === 0x07064b50) {
+      const pos = Number(fin.getBigUint64(loc + 8, true));
+      const z = new DataView(await f.lire(pos, pos + 56));
+      if (z.getUint32(0, true) === 0x06064b50) {
+        tailleCD = Number(z.getBigUint64(40, true));
+        debutCD = Number(z.getBigUint64(48, true));
+      }
+    }
+  }
+  const cd = new DataView(await f.lire(debutCD, debutCD + tailleCD));
+  const dec = new TextDecoder();
+  const entrees = [];
+  let p = 0;
+  while (p + 46 <= cd.byteLength && cd.getUint32(p, true) === 0x02014b50) {
+    const methode = cd.getUint16(p + 10, true);
+    let ctaille = cd.getUint32(p + 20, true);
+    let utaille = cd.getUint32(p + 24, true);
+    const nlen = cd.getUint16(p + 28, true), elen = cd.getUint16(p + 30, true), clen = cd.getUint16(p + 32, true);
+    let off = cd.getUint32(p + 42, true);
+    const nom = dec.decode(new Uint8Array(cd.buffer, p + 46, nlen));
+    let e = p + 46 + nlen;
+    const eFin = e + elen;
+    while (e + 4 <= eFin) {
+      const id = cd.getUint16(e, true), len = cd.getUint16(e + 2, true);
+      if (id === 1) {
+        let q = e + 4;
+        if (utaille === 0xFFFFFFFF) { utaille = Number(cd.getBigUint64(q, true)); q += 8; }
+        if (ctaille === 0xFFFFFFFF) { ctaille = Number(cd.getBigUint64(q, true)); q += 8; }
+        if (off === 0xFFFFFFFF) { off = Number(cd.getBigUint64(q, true)); q += 8; }
+      }
+      e += 4 + len;
+    }
+    entrees.push({nom, methode, ctaille, off, nlen, elen});
+    p += 46 + nlen + elen + clen;
+  }
+  return entrees;
+}
+
+async function extraire(f, en){
+  // en-tête local + données en une seule requête (avec un peu de marge)
+  let buf = await f.lire(en.off, en.off + 30 + en.nlen + en.elen + 256 + en.ctaille);
+  const h = new DataView(buf);
+  if (buf.byteLength < 30 || h.getUint32(0, true) !== 0x04034b50) throw new Error('Archive abîmée.');
+  const debut = 30 + h.getUint16(26, true) + h.getUint16(28, true);
+  if (debut + en.ctaille > buf.byteLength) {
+    const reste = await f.lire(en.off + buf.byteLength, en.off + debut + en.ctaille);
+    const tout = new Uint8Array(buf.byteLength + reste.byteLength);
+    tout.set(new Uint8Array(buf), 0);
+    tout.set(new Uint8Array(reste), buf.byteLength);
+    buf = tout.buffer;
+  }
+  const donnees = buf.slice(debut, debut + en.ctaille);
+  const type = MIME_IMG[en.nom.split('.').pop().toLowerCase()] || 'application/octet-stream';
+  if (en.methode === 0) return new Blob([donnees], {type});
+  if (en.methode === 8) {
+    const flux = new Blob([donnees]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new Blob([await new Response(flux).blob()], {type});
+  }
+  throw new Error('Compression non prise en charge (' + en.methode + ').');
+}
+
+function pagesDe(id){
+  if (!D.index.has(id)) {
+    const l = D.livres.get(id);
+    if (!l) return Promise.reject(new Error('Livre introuvable (déplacé ou supprimé ?).'));
+    const p = indexZip(new FichierDrive(l.id, l.taille)).then(entrees => entrees
+      .filter(e => IMG_RE.test(e.nom) && !/(^|\/)(__MACOSX|\.)/.test(e.nom))
+      .sort((a, b) => collator.compare(a.nom, b.nom)));
+    p.catch(() => D.index.delete(id));
+    D.index.set(id, p);
+  }
+  return D.index.get(id);
+}
+
+const cachePages = new Map();
+function urlPage(id, i){
+  const cle = id + ':' + i;
+  let p = cachePages.get(cle);
+  if (p) {                      // remet en fin de file (le plus récent)
+    cachePages.delete(cle);
+    cachePages.set(cle, p);
+    return p;
+  }
+  p = pagesDe(id).then(pages => {
+    if (!pages[i]) throw new Error('Page introuvable.');
+    const l = D.livres.get(id);
+    return extraire(new FichierDrive(l.id, l.taille), pages[i]);
+  }).then(b => URL.createObjectURL(b));
+  p.catch(() => cachePages.delete(cle));
+  cachePages.set(cle, p);
+  while (cachePages.size > 30) {
+    const [k, ancien] = cachePages.entries().next().value;
+    cachePages.delete(k);
+    ancien.then(u => setTimeout(() => URL.revokeObjectURL(u), 30000)).catch(() => {});
+  }
+  return p;
+}
+
+/* ---------- Couvertures (mémorisées dans l'espace privé de l'application) ---------- */
+async function listerCouverturesSauvees(){
+  const m = new Map();
+  let pageToken;
+  do {
+    const r = await drive('files', {params: {
+      spaces: 'appDataFolder', q: "name contains 'couv-'",
+      fields: 'nextPageToken, files(id,name)', pageSize: 1000, pageToken,
+    }});
+    for (const f of r.files) {
+      const x = f.name.match(/^couv-(.+)-(\d+)\.jpg$/);
+      if (x) m.set(x[1], {fichier: f.id, mtime: Number(x[2])});
+    }
+    pageToken = r.nextPageToken;
+  } while (pageToken);
+  return m;
+}
+
+const fileTaches = [];
+let tachesActives = 0;
+function enFile(tache){
+  return new Promise((res, rej) => { fileTaches.push({tache, res, rej}); pomper(); });
+}
+function pomper(){
+  while (tachesActives < 4 && fileTaches.length) {
+    const {tache, res, rej} = fileTaches.shift();
+    tachesActives++;
+    tache().then(res, rej).finally(() => { tachesActives--; pomper(); });
+  }
+}
+
+async function reduire(blob){
+  try {
+    const bmp = await createImageBitmap(blob);
+    const w = 320, h = Math.round(bmp.height * w / bmp.width);
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(bmp, 0, 0, w, h);
+    bmp.close();
+    return await new Promise(r => c.toBlob(r, 'image/jpeg', 0.8)) || blob;
+  } catch { return blob; }
+}
+
+async function produireCouverture(id){
+  const l = D.livres.get(id);
+  const sauvees = await D.couvSauvees;
+  const sauvee = sauvees.get(id);
+  if (sauvee && sauvee.mtime === l.mtime) {
+    try {
+      const r = await drive('files/' + sauvee.fichier, {params: {alt: 'media'}, brut: true});
+      return URL.createObjectURL(await r.blob());
+    } catch {}
+  }
+  const pages = await pagesDe(id);
+  if (!pages.length) throw new Error('Aucune image.');
+  const vignette = await reduire(await extraire(new FichierDrive(l.id, l.taille), pages[0]));
+  televerser(`couv-${id}-${l.mtime}.jpg`, vignette, 'image/jpeg').then(r => {
+    if (sauvee) drive('files/' + sauvee.fichier, {method: 'DELETE', brut: true}).catch(() => {});
+    sauvees.set(id, {fichier: r.id, mtime: l.mtime});
+  }).catch(() => {});
+  return URL.createObjectURL(vignette);
+}
+
+function urlCouverture(id){
+  if (!D.couvertures.has(id)) {
+    const p = enFile(() => produireCouverture(id));
+    p.catch(() => D.couvertures.delete(id));
+    D.couvertures.set(id, p);
+  }
+  return D.couvertures.get(id);
+}
+
+const obsCouvertures = new IntersectionObserver(entrees => {
+  for (const en of entrees) {
+    if (!en.isIntersecting) continue;
+    obsCouvertures.unobserve(en.target);
+    const img = en.target;
+    urlCouverture(img.dataset.livre).then(u => { img.src = u; }).catch(() => img.remove());
+  }
+}, {rootMargin: '400px'});
+
+function afficherCouverture(img, id){
+  img.removeAttribute('loading');
+  img.dataset.livre = id;
+  obsCouvertures.observe(img);
+}
+
+/* ---------- Parcours du dossier Drive ---------- */
+function idDossier(texte){
+  texte = (texte || '').trim();
+  const m = texte.match(/folders\/([\w-]{10,})/) || texte.match(/[?&]id=([\w-]{10,})/) || texte.match(/^([\w-]{10,})$/);
+  return m ? m[1] : '';
+}
+
+async function listerBibliotheque(){
+  const racine = await drive('files/' + D.racine, {params: {fields: 'id,name,mimeType', supportsAllDrives: true}});
+  if (racine.mimeType !== DOSSIER_MIME) throw new Error("Ce lien ne correspond pas à un dossier Google Drive.");
+  D.nomRacine = racine.name;
+  const dossiers = new Map([[racine.id, '']]);
+  const nouveaux = new Map();
+  let niveau = [racine.id];
+  while (niveau.length) {
+    const suivant = [];
+    for (let k = 0; k < niveau.length; k += 30) {
+      const paquet = niveau.slice(k, k + 30);
+      const q = '(' + paquet.map(id => `'${id}' in parents`).join(' or ') + ') and trashed = false';
+      let pageToken;
+      do {
+        const r = await drive('files', {params: {
+          q, pageSize: 1000, pageToken,
+          fields: 'nextPageToken, files(id,name,mimeType,size,modifiedTime,parents)',
+          supportsAllDrives: true, includeItemsFromAllDrives: true,
+        }});
+        for (const f of r.files) {
+          const parent = (f.parents || []).find(id => paquet.includes(id));
+          if (parent === undefined) continue;
+          const cheminParent = dossiers.get(parent);
+          const nom = f.name.replace(/\//g, '-');
+          if (f.mimeType === DOSSIER_MIME) {
+            if (!dossiers.has(f.id)) {
+              dossiers.set(f.id, cheminParent ? cheminParent + '/' + nom : nom);
+              suivant.push(f.id);
+            }
+          } else if (/\.(cbz|zip)$/i.test(f.name) && Number(f.size) > 0) {
+            nouveaux.set(f.id, {
+              id: f.id,
+              titre: f.name.replace(/\.(cbz|zip)$/i, '').replace(/_+/g, ' ').trim(),
+              dossier: cheminParent,
+              serie: cheminParent ? cheminParent.replace(/\//g, ' / ') : racine.name,
+              mtime: Math.floor(Date.parse(f.modifiedTime) / 1000),
+              taille: Number(f.size),
+            });
+          }
+        }
+        pageToken = r.nextPageToken;
+      } while (pageToken);
+    }
+    niveau = suivant;
+  }
+  // Oublie les index des fichiers modifiés depuis le dernier passage
+  for (const [id, l] of nouveaux) {
+    const ancien = D.livres.get(id);
+    if (ancien && ancien.mtime !== l.mtime) { D.index.delete(id); D.couvertures.delete(id); }
+  }
+  D.livres = nouveaux;
+}
+
+/* ---------- Profils et progression (fichier privé dans le Drive) ---------- */
+function normaliser(d){
+  d = d && typeof d === 'object' ? d : {};
+  return {version: 1, racine: d.racine || '', dernier: d.dernier || '', profils: d.profils || {}, supprimes: d.supprimes || {}};
+}
+
+async function chargerDonnees(){
+  const r = await drive('files', {params: {spaces: 'appDataFolder', q: `name = '${FICHIER_DONNEES}'`, fields: 'files(id)', pageSize: 10}});
+  if (r.files.length) {
+    D.fichierDonnees = r.files[0].id;
+    D.donnees = normaliser(await drive('files/' + D.fichierDonnees, {params: {alt: 'media'}}));
+  } else {
+    D.donnees = normaliser({});
+  }
+}
+
+const horodatage = e => Math.max(e.maj || 0, e.majMasque || 0);
+function fusionner(local, distant){
+  for (const [pid, t] of Object.entries(distant.supprimes)) local.supprimes[pid] = Math.max(local.supprimes[pid] || 0, t);
+  for (const pid of Object.keys(local.supprimes)) { delete local.profils[pid]; delete distant.profils[pid]; }
+  for (const [pid, pd] of Object.entries(distant.profils)) {
+    const pl = local.profils[pid];
+    if (!pl) { local.profils[pid] = pd; continue; }
+    if ((pd.majNom || 0) > (pl.majNom || 0)) { pl.nom = pd.nom; pl.majNom = pd.majNom; }
+    for (const [id, e] of Object.entries(pd.livres || {})) {
+      if (!pl.livres[id] || horodatage(e) > horodatage(pl.livres[id])) pl.livres[id] = e;
+    }
+    for (const [app, pr] of Object.entries(pd.preferences || {})) {
+      if (!pl.preferences[app] || (pr.maj || 0) > (pl.preferences[app].maj || 0)) pl.preferences[app] = pr;
+    }
+  }
+  if (!local.racine) local.racine = distant.racine;
+}
+
+let donneesModifiees = false, minuterieSauvegarde = null, fileSauvegarde = Promise.resolve();
+function marquerModifie(){
+  donneesModifiees = true;
+  clearTimeout(minuterieSauvegarde);
+  minuterieSauvegarde = setTimeout(() => sauvegarder(false), 2500);
+}
+function sauvegarder(urgent){
+  clearTimeout(minuterieSauvegarde);
+  fileSauvegarde = fileSauvegarde.then(() => ecrireDonnees(urgent)).catch(e => {
+    donneesModifiees = true;
+    console.warn('Sauvegarde impossible :', e.message);
+  });
+  return fileSauvegarde;
+}
+async function ecrireDonnees(urgent){
+  if (!donneesModifiees || !D.donnees || !jetonValide()) return;
+  donneesModifiees = false;
+  if (D.fichierDonnees && !urgent) {
+    // un autre appareil a peut-être écrit entre-temps : on fusionne
+    try { fusionner(D.donnees, normaliser(await drive('files/' + D.fichierDonnees, {params: {alt: 'media'}}))); } catch {}
+  }
+  const corps = JSON.stringify(D.donnees);
+  if (D.fichierDonnees) {
+    const options = {method: 'PATCH', params: {uploadType: 'media'}, body: corps, headers: {'Content-Type': 'application/json'}};
+    try {
+      await drive(`${API_ENVOI}/${D.fichierDonnees}`, Object.assign({keepalive: urgent && corps.length < 60000}, options));
+    } catch (e) {
+      if (!urgent) throw e;
+      await drive(`${API_ENVOI}/${D.fichierDonnees}`, options);
+    }
+  } else {
+    const r = await televerser(FICHIER_DONNEES, new Blob([corps], {type: 'application/json'}), 'application/json');
+    D.fichierDonnees = r.id;
+  }
+}
+
+function resume(pid){
+  const p = D.donnees.profils[pid];
+  const entrees = Object.values(p.livres || {});
+  return {
+    id: pid, nom: p.nom, couleur: p.couleur,
+    lus: entrees.filter(e => e.total && e.page >= e.total - 1).length,
+    en_cours: entrees.filter(e => e.page > 0 && e.page < e.total - 1 && !e.masque).length,
+  };
+}
+
+function validerNom(nom, sauf){
+  nom = String(nom || '').split(/\s+/).filter(Boolean).join(' ');
+  if (!nom) throw new Error('Indiquez un prénom.');
+  if (nom.length > 24) throw new Error('24 caractères maximum.');
+  for (const [pid, p] of Object.entries(D.donnees.profils)) {
+    if (pid !== sauf && p.nom.toLocaleLowerCase('fr') === nom.toLocaleLowerCase('fr')) {
+      throw new Error(`Le profil « ${nom} » existe déjà.`);
+    }
+  }
+  return nom;
+}
+
+function selectionnerProfil(pid){
+  D.profilActuel = pid || null;
+  D.donnees.dernier = pid || '';
+  marquerModifie();
+  const url = location.pathname + location.search + (pid ? '#profil=' + pid : '');
+  history.replaceState(history.state, '', url);
+}
+
+/* ---------- Routeur : mêmes réponses que l'ancien serveur ---------- */
+async function routeur(url, o){
+  const [chemin, requete = ''] = url.split('?');
+  const methode = o.method || 'GET';
+  const corps = o.body ? JSON.parse(o.body) : {};
+  const profils = D.donnees.profils;
+  let m;
+
+  if (chemin === 'api/profils' && methode === 'GET') {
+    return {profils: Object.keys(profils).map(resume), actuel: D.profilActuel};
+  }
+  if (chemin === 'api/livres') {
+    if (requete.includes('actualiser') || !D.livres.size) await listerBibliotheque();
+    const pid = D.profilActuel;
+    const p = pid && profils[pid];
+    return {
+      nom: D.nomRacine, local: false,
+      profil: p ? resume(pid) : null,
+      preferences: p ? p.preferences : {},
+      livres: [...D.livres.values()].map(l => Object.assign({}, l, {
+        progression: p && p.livres[l.id] ? Object.assign({}, p.livres[l.id]) : null,
+      })),
+    };
+  }
+  if ((m = chemin.match(/^api\/livre\/(.+)$/))) {
+    return {id: m[1], pages: (await pagesDe(m[1])).length};
+  }
+  if (chemin === 'api/profils' && methode === 'POST') {
+    const nom = validerNom(corps.nom);
+    if (Object.keys(profils).length >= 20) throw new Error('20 profils maximum.');
+    const pid = Array.from(crypto.getRandomValues(new Uint8Array(4)), b => b.toString(16).padStart(2, '0')).join('');
+    const utilisees = new Set(Object.values(profils).map(p => p.couleur));
+    const couleur = COULEURS.find(c => !utilisees.has(c)) || COULEURS[Object.keys(profils).length % COULEURS.length];
+    profils[pid] = {nom, couleur, majNom: maintenant(), livres: {}, preferences: {}};
+    selectionnerProfil(pid);
+    return {profil: resume(pid)};
+  }
+  if (chemin === 'api/profils/renommer') {
+    if (!profils[corps.id]) throw new Error('Profil introuvable.');
+    profils[corps.id].nom = validerNom(corps.nom, corps.id);
+    profils[corps.id].majNom = maintenant();
+    marquerModifie();
+    return {ok: true};
+  }
+  if (chemin === 'api/profils/supprimer') {
+    delete profils[corps.id];
+    D.donnees.supprimes[corps.id] = maintenant();
+    if (D.profilActuel === corps.id) selectionnerProfil(null); else marquerModifie();
+    return {ok: true};
+  }
+  if (chemin === 'api/profil') {
+    if (corps.id && !profils[corps.id]) throw new Error('Profil introuvable.');
+    selectionnerProfil(corps.id);
+    return {profil: corps.id ? resume(corps.id) : null};
+  }
+
+  const p = D.profilActuel && profils[D.profilActuel];
+  if (!p) throw Object.assign(new Error('Choisissez un profil.'), {code: 409});
+
+  if (chemin === 'api/progression') {
+    if (!D.livres.has(corps.id)) return {ok: false};
+    const total = (await pagesDe(corps.id)).length;
+    p.livres[corps.id] = {page: Math.max(0, Math.min(corps.page, total - 1)), total, maj: maintenant()};
+    marquerModifie();
+    return {ok: true};
+  }
+  if (chemin === 'api/preferences') {
+    p.preferences[corps.appareil === 'mobile' ? 'mobile' : 'ordinateur'] = {
+      mode: ['single', 'double', 'scroll'].includes(corps.mode) ? corps.mode : 'single',
+      fit: ['height', 'width', 'original'].includes(corps.fit) ? corps.fit : 'height',
+      rtl: !!corps.rtl,
+      vue: corps.vue === 'liste' ? 'liste' : 'grille',
+      maj: maintenant(),
+    };
+    marquerModifie();
+    return {ok: true};
+  }
+  if (chemin === 'api/reprise') {
+    for (const id of corps.ids || []) {
+      const e = p.livres[id];
+      if (!e) continue;
+      if (corps.masquer) e.masque = true; else delete e.masque;
+      e.majMasque = maintenant();
+    }
+    marquerModifie();
+    return {ok: true};
+  }
+  throw new Error('Action inconnue : ' + chemin);
+}
+
+async function api(url, options){
+  try {
+    return await routeur(url, options || {});
+  } catch (e) {
+    if (e.code === 409) { profil = null; majProfil(); ouvrirProfils(); }
+    throw e;
+  }
+}
+
+/* ---------- Écran de connexion et démarrage ---------- */
+function montrerConnexion(texte, avecBouton){
+  $('ecranGoogle').hidden = false;
+  document.body.style.overflow = 'hidden';
+  $('aideGoogle').textContent = texte;
+  $('btnConnexion').hidden = !avecBouton;
+  $('formDossier').hidden = true;
+}
+function cacherConnexion(){
+  $('ecranGoogle').hidden = true;
+  document.body.style.overflow = '';
+}
+
+function demanderDossier(erreur){
+  $('ecranGoogle').hidden = false;
+  document.body.style.overflow = 'hidden';
+  $('btnConnexion').hidden = true;
+  $('aideGoogle').textContent = 'Quel dossier Google Drive contient vos mangas ?';
+  $('formDossier').hidden = false;
+  $('erreurDossier').textContent = erreur || '';
+  $('lienDossier').value = D.racine ? 'https://drive.google.com/drive/folders/' + D.racine : '';
+  $('lienDossier').focus();
+}
+
+$('formDossier').addEventListener('submit', async e => {
+  e.preventDefault();
+  const id = idDossier($('lienDossier').value);
+  if (!id) {
+    $('erreurDossier').textContent = "Collez le lien du dossier, tel qu'il apparaît dans la barre d'adresse de Google Drive.";
+    return;
+  }
+  $('erreurDossier').textContent = 'Lecture du dossier…';
+  await ouvrirRacine(id);
+});
+
+async function ouvrirRacine(id){
+  const ancien = D.racine;
+  D.racine = id;
+  try {
+    await listerBibliotheque();
+  } catch (e) {
+    D.racine = ancien;
+    return demanderDossier(e.message);
+  }
+  if (id !== ancien) {
+    D.index.clear();
+    D.couvertures.clear();
+    dossierCourant = '';
+    ouverts.clear();
+    history.replaceState({dossier: ''}, '', location.pathname + location.search + location.hash);
+  }
+  if (D.donnees.racine !== id) { D.donnees.racine = id; marquerModifie(); }
+  const depuisLien = (location.hash.match(/profil=([\w-]+)/) || [])[1];
+  const pid = [depuisLien, D.profilActuel, D.donnees.dernier].find(x => x && D.donnees.profils[x]);
+  D.profilActuel = pid || null;
+  if (pid && pid !== depuisLien) selectionnerProfil(pid);
+  cacherConnexion();
+  etat('', 'Chargement de la bibliothèque…');
+  charger(false);
+}
+
+async function apresConnexion(){
+  $('aideGoogle').textContent = 'Lecture de vos données…';
+  $('btnConnexion').hidden = true;
+  await chargerDonnees();
+  D.couvSauvees = listerCouverturesSauvees().catch(() => new Map());
+  const racine = idDossier(CONFIG.DOSSIER) || D.donnees.racine;
+  if (!racine) return demanderDossier();
+  await ouvrirRacine(racine);
+}
+
+$('btnConnexion').addEventListener('click', async () => {
+  $('btnConnexion').disabled = true;
+  try {
+    await demanderJeton();
+    await apresConnexion();
+  } catch (e) {
+    montrerConnexion(e.message, true);
+  } finally {
+    $('btnConnexion').disabled = false;
+  }
+});
+
+$('btnReconnecter').addEventListener('click', async () => {
+  try { await demanderJeton(); } catch (e) { notifier(e.message); }
+});
+
+$('btnDossierDrive').addEventListener('click', () => { fermerProfils(); demanderDossier(); });
+$('btnDeconnexion').addEventListener('click', async () => {
+  await envoyerProgression();
+  await sauvegarder(false);
+  if (G.jeton) google.accounts.oauth2.revoke(G.jeton, () => location.reload());
+  else location.reload();
+});
+
+async function demarrer(){
+  if (CONFIG.CLIENT_ID.startsWith('COLLEZ')) {
+    return montrerConnexion("Page pas encore configurée : collez votre identifiant client Google dans CONFIG, tout en haut du script (voir GUIDE.md).", false);
+  }
+  if (location.protocol === 'file:') {
+    return montrerConnexion("Google refuse la connexion depuis un fichier ouvert en double-clic. Publiez la page sur GitHub Pages, ou ouvrez-la via http://localhost (voir GUIDE.md).", false);
+  }
+  if (typeof DecompressionStream === 'undefined') {
+    return montrerConnexion('Ce navigateur est trop ancien. Utilisez une version récente de Chrome, Edge, Firefox ou Safari.', false);
+  }
+  montrerConnexion('Chargement…', false);
+  try {
+    await chargerScriptGoogle();
+    initialiserClient();
+    montrerConnexion('Vos mangas sont lus directement depuis Google Drive. Connectez-vous pour continuer.', true);
+  } catch (e) {
+    montrerConnexion(e.message, false);
+  }
+}
+
+/* ================= Bibliothèque ================= */
+function etat(titre, texte){
+  const d = document.createElement('div');
+  d.className = 'etat';
+  if (titre) { const h = document.createElement('h2'); h.textContent = titre; d.append(h); }
+  const p = document.createElement('p'); p.textContent = texte; d.append(p);
+  $('etageres').replaceChildren(d);
+}
+
+async function charger(actualiser){
+  const btn = $('btnActualiser');
+  btn.disabled = true;
+  try {
+    const d = await api('api/livres' + (actualiser ? '?actualiser=1' : ''));
+    if (!d.profil) { profil = null; majProfil(); ouvrirProfils(); return; }
+    profil = d.profil;
+    majProfil();
+    livres = d.livres;
+    $('titre').firstChild.textContent = d.nom;
+    document.title = d.nom;
+    if (!prefsChargees) {
+      const p = (d.preferences || {})[appareil];
+      if (p) { R.mode = p.mode; R.fit = p.fit; R.rtl = p.rtl; vue = p.vue === 'liste' ? 'liste' : 'grille'; }
+      majBascule();
+      prefsChargees = true;
+    }
+    afficher();
+  } catch (e) {
+    etat('Lecture de Google Drive impossible', e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function enCours(l){
+  const p = l.progression;
+  return p && p.page > 0 && p.page < p.total - 1;
+}
+function termine(l){
+  const p = l.progression;
+  return p && p.total > 0 && p.page >= p.total - 1;
+}
+
+function carte(l, avecSerie){
+  const b = document.createElement('button');
+  b.className = 'book';
+  b.innerHTML = `
+    <div class="cover">
+      <div class="ph"></div>
+      <img alt="" loading="lazy">
+    </div>
+    <div class="t"></div>
+    <div class="m"></div>`;
+  const img = b.querySelector('img');
+  img.onerror = () => img.remove();
+  afficherCouverture(img, l.id);
+  b.querySelector('.t').textContent = l.titre;
+
+  const p = l.progression;
+  let meta = avecSerie ? l.serie : '';
+  if (termine(l)) {
+    const badge = document.createElement('span');
+    badge.className = 'badge';
+    badge.textContent = 'Lu';
+    b.querySelector('.cover').append(badge);
+  } else if (enCours(l)) {
+    const bar = document.createElement('div');
+    bar.className = 'progress';
+    bar.innerHTML = `<i style="width:${Math.round((p.page + 1) / p.total * 100)}%"></i>`;
+    b.querySelector('.cover').append(bar);
+    if (!avecSerie) meta = `Page ${p.page + 1} sur ${p.total}`;
+  }
+  b.querySelector('.m').textContent = meta || '\u00a0';
+  b.title = l.serie + ' / ' + l.titre;
+  b.addEventListener('click', () => ouvrir(l));
+  return b;
+}
+
+function ligne(l, avecSerie){
+  const b = document.createElement('button');
+  b.className = 'ligne';
+  const t = document.createElement('span');
+  t.className = 't';
+  t.textContent = l.titre;
+  const st = document.createElement('span');
+  st.className = 'st';
+  const p = l.progression;
+  if (termine(l)) {
+    st.textContent = 'Lu';
+    st.classList.add('lu');
+  } else if (enCours(l)) {
+    st.textContent = `Page ${p.page + 1} / ${p.total}`;
+    st.classList.add('cours');
+    const barre = document.createElement('span');
+    barre.className = 'barre';
+    barre.style.width = Math.round((p.page + 1) / p.total * 100) + '%';
+    b.append(barre);
+  } else {
+    st.textContent = 'Non lu';
+  }
+  b.append(t, st);
+  if (avecSerie) {
+    const s = document.createElement('span');
+    s.className = 's';
+    s.textContent = l.serie;
+    b.append(s);
+  }
+  b.title = l.serie + ' / ' + l.titre;
+  b.addEventListener('click', () => ouvrir(l));
+  return b;
+}
+
+function rayon(titre, items, options = {}){
+  const frag = document.createDocumentFragment();
+  const h = document.createElement('h2');
+  h.className = 'rayon' + (options.reprendre ? ' reprendre' : '');
+  h.textContent = titre;
+  if (options.reprendre) {
+    const vider = document.createElement('button');
+    vider.className = 'btn vider';
+    vider.textContent = 'Tout retirer';
+    vider.title = 'Retirer tous ces livres de « Reprendre la lecture »';
+    vider.onclick = () => masquerReprise(items);
+    h.append(vider);
+  } else {
+    const nb = document.createElement('span');
+    nb.className = 'nb';
+    nb.textContent = items.length + (items.length > 1 ? ' livres' : ' livre');
+    h.append(nb);
+  }
+  const g = document.createElement('div');
+  const element = vue === 'liste' ? ligne : carte;
+  g.className = vue === 'liste' ? 'liste' : options.reprendre ? 'rangee' : 'grid';
+  items.forEach(l => {
+    const el = element(l, options.reprendre);
+    g.append(options.reprendre ? avecRetrait(el, l) : el);
+  });
+  frag.append(h, g);
+  return frag;
+}
+
+/* ----- Vue liste : arborescence des dossiers ----- */
+function construireArbre(liste){
+  const racine = {nom: '', chemin: '', dossiers: new Map(), livres: []};
+  for (const l of liste) {
+    let n = racine;
+    for (const part of (l.dossier || '').split('/').filter(Boolean)) {
+      if (!n.dossiers.has(part)) {
+        n.dossiers.set(part, {nom: part, chemin: n.chemin ? n.chemin + '/' + part : part, dossiers: new Map(), livres: []});
+      }
+      n = n.dossiers.get(part);
+    }
+    n.livres.push(l);
+  }
+  return racine;
+}
+function tousLesLivres(n){
+  return [...n.livres, ...[...n.dossiers.values()].flatMap(tousLesLivres)];
+}
+
+function ligneDossier(d, niveau, ouvert, forceOuvert){
+  const tous = tousLesLivres(d);
+  const lus = tous.filter(termine).length;
+  const commences = tous.filter(enCours).length;
+  const b = document.createElement('button');
+  b.className = 'dossier';
+  b.style.setProperty('--niv', niveau);
+  b.setAttribute('aria-expanded', String(ouvert));
+  b.innerHTML = '<span class="chev" aria-hidden="true">▶</span><span class="n"></span><span class="st"></span><span class="s"></span>';
+  b.querySelector('.n').textContent = d.nom;
+  const nbSous = d.dossiers.size;
+  b.querySelector('.s').textContent =
+    `${tous.length} livre${tous.length > 1 ? 's' : ''}` +
+    (nbSous ? `, ${nbSous} dossier${nbSous > 1 ? 's' : ''}` : '');
+  const st = b.querySelector('.st');
+  if (lus === tous.length) { st.textContent = 'Tout lu'; st.classList.add('lu'); }
+  else if (lus) st.textContent = `${lus} / ${tous.length} lus`;
+  else if (commences) st.textContent = 'En cours';
+  if (lus && lus < tous.length) {
+    const barre = document.createElement('span');
+    barre.className = 'barre';
+    barre.style.width = Math.round(lus / tous.length * 100) + '%';
+    b.append(barre);
+  }
+  b.addEventListener('click', () => {
+    if (forceOuvert) return;
+    const deplie = b.getAttribute('aria-expanded') === 'true';
+    if (deplie) {
+      ouverts.delete(d.chemin);
+      // referme aussi les sous-dossiers
+      for (const c of [...ouverts]) if (c.startsWith(d.chemin + '/')) ouverts.delete(c);
+      b.nextElementSibling?.classList.contains('sous') && b.nextElementSibling.remove();
+      b.setAttribute('aria-expanded', 'false');
+    } else {
+      ouverts.add(d.chemin);
+      b.after(contenuDossier(d, niveau + 1, false));
+      b.setAttribute('aria-expanded', 'true');
+    }
+  });
+  return b;
+}
+
+function contenuDossier(n, niveau, forceOuvert){
+  const bloc = document.createElement('div');
+  bloc.className = niveau === 0 ? 'liste' : 'sous';
+  const dossiers = [...n.dossiers.values()].sort((a, b) => collator.compare(a.nom, b.nom));
+  for (const d of dossiers) {
+    const ouvert = forceOuvert || ouverts.has(d.chemin);
+    bloc.append(ligneDossier(d, niveau, ouvert, forceOuvert));
+    if (ouvert) bloc.append(contenuDossier(d, niveau + 1, forceOuvert));
+  }
+  n.livres.sort((a, b) => collator.compare(a.titre, b.titre)).forEach(l => {
+    const r = ligne(l, false);
+    r.style.setProperty('--niv', niveau + (niveau ? 0.9 : 0));
+    bloc.append(r);
+  });
+  return bloc;
+}
+
+function vueListe(zone, liste, recherche){
+  const h = document.createElement('h2');
+  h.className = 'rayon';
+  h.textContent = recherche ? 'Résultats' : 'Tous les livres';
+  zone.append(h);
+  const arbre = construireArbre(liste);
+  if (!recherche && arbre.dossiers.size) {
+    const outils = document.createElement('div');
+    outils.className = 'outils-liste';
+    const tout = document.createElement('button');
+    tout.className = 'btn'; tout.textContent = 'Tout déplier';
+    tout.onclick = () => {
+      const ajouter = n => n.dossiers.forEach(d => { ouverts.add(d.chemin); ajouter(d); });
+      ajouter(arbre);
+      afficher();
+    };
+    const rien = document.createElement('button');
+    rien.className = 'btn'; rien.textContent = 'Tout replier';
+    rien.onclick = () => { ouverts.clear(); afficher(); };
+    outils.append(tout, rien);
+    zone.append(outils);
+  }
+  // Pendant une recherche, tous les dossiers contenant un résultat sont dépliés
+  zone.append(contenuDossier(arbre, 0, !!recherche));
+}
+
+/* ----- Vue couvertures : navigation dans les dossiers ----- */
+function trouverNoeud(arbre, chemin){
+  let n = arbre;
+  for (const part of chemin.split('/').filter(Boolean)) {
+    n = n.dossiers.get(part);
+    if (!n) return null;
+  }
+  return n;
+}
+function premierLivre(n){
+  const l = [...n.livres].sort((a, b) => collator.compare(a.titre, b.titre))[0];
+  if (l) return l;
+  const d = [...n.dossiers.values()].sort((a, b) => collator.compare(a.nom, b.nom))[0];
+  return d ? premierLivre(d) : null;
+}
+
+function allerDossier(chemin, remplacer){
+  const parent = chemin.split('/').slice(0, -1).join('/');
+  history.replaceState(Object.assign({}, history.state, {scroll: scrollY}), '');
+  const etatNav = {dossier: chemin, depuisParent: !remplacer && parent === dossierCourant};
+  if (remplacer) history.replaceState(etatNav, ''); else history.pushState(etatNav, '');
+  dossierCourant = chemin;
+  afficher();
+  scrollTo(0, 0);
+}
+
+function carteDossier(d){
+  const tous = tousLesLivres(d);
+  const lus = tous.filter(termine).length;
+  const commences = tous.filter(enCours).length;
+  const premier = premierLivre(d);
+  const b = document.createElement('button');
+  b.className = 'book carte-dossier';
+  b.innerHTML = `
+    <div class="pile"><div class="cover">
+      <div class="ph"></div>
+      <img alt="" loading="lazy">
+      <span class="compteur"></span>
+    </div></div>
+    <div class="t"></div>
+    <div class="m"></div>`;
+  const img = b.querySelector('img');
+  img.onerror = () => img.remove();
+  if (premier) afficherCouverture(img, premier.id); else img.remove();
+  b.querySelector('.compteur').textContent = tous.length;
+  const cover = b.querySelector('.cover');
+  if (lus === tous.length) {
+    const badge = document.createElement('span');
+    badge.className = 'badge'; badge.textContent = 'Lu';
+    cover.append(badge);
+  } else if (lus) {
+    const bar = document.createElement('div');
+    bar.className = 'progress';
+    bar.innerHTML = `<i style="width:${Math.round(lus / tous.length * 100)}%"></i>`;
+    cover.append(bar);
+  }
+  b.querySelector('.t').textContent = d.nom;
+  let meta = `${tous.length} livre${tous.length > 1 ? 's' : ''}`;
+  if (lus && lus < tous.length) meta += `, ${lus} lu${lus > 1 ? 's' : ''}`;
+  else if (!lus && commences) meta += ', en cours';
+  b.querySelector('.m').textContent = meta;
+  b.title = 'Ouvrir le dossier ' + d.nom;
+  b.addEventListener('click', () => allerDossier(d.chemin));
+  return b;
+}
+
+function filAriane(racineNom){
+  const nav = document.createElement('nav');
+  nav.className = 'fil';
+  nav.setAttribute('aria-label', 'Emplacement');
+  const parties = dossierCourant.split('/');
+  const parent = parties.slice(0, -1).join('/');
+
+  const retour = document.createElement('button');
+  retour.className = 'btn';
+  retour.textContent = '‹ Retour';
+  retour.onclick = () => {
+    if (history.state && history.state.dossier === dossierCourant && history.state.depuisParent) history.back();
+    else allerDossier(parent, true);
+  };
+  nav.append(retour);
+
+  const lien = (texte, chemin) => {
+    const b = document.createElement('button');
+    b.className = 'lien'; b.textContent = texte;
+    b.onclick = () => allerDossier(chemin);
+    return b;
+  };
+  const sep = () => { const s = document.createElement('span'); s.className = 'sep'; s.textContent = '›'; return s; };
+  nav.append(lien(racineNom, ''));
+  parties.forEach((p, i) => {
+    nav.append(sep());
+    if (i === parties.length - 1) {
+      const ici = document.createElement('span');
+      ici.className = 'ici'; ici.textContent = p;
+      nav.append(ici);
+    } else {
+      nav.append(lien(p, parties.slice(0, i + 1).join('/')));
+    }
+  });
+  return nav;
+}
+
+function vueCouvertures(zone, liste){
+  const arbre = construireArbre(liste);
+  let n = trouverNoeud(arbre, dossierCourant);
+  if (!n) {   // dossier supprimé ou renommé entre-temps
+    dossierCourant = '';
+    history.replaceState({dossier: ''}, '');
+    n = arbre;
+  }
+  const racineNom = document.title || 'Bibliothèque';
+  if (dossierCourant) zone.append(filAriane(racineNom));
+
+  const h = document.createElement('h2');
+  h.className = 'rayon';
+  h.textContent = dossierCourant ? n.nom : 'Tous les livres';
+  const total = tousLesLivres(n).length;
+  const nb = document.createElement('span');
+  nb.className = 'nb';
+  nb.textContent = total + (total > 1 ? ' livres' : ' livre');
+  h.append(nb);
+
+  const g = document.createElement('div');
+  g.className = 'grid';
+  [...n.dossiers.values()]
+    .sort((a, b) => collator.compare(a.nom, b.nom))
+    .forEach(d => g.append(carteDossier(d)));
+  [...n.livres]
+    .sort((a, b) => collator.compare(a.titre, b.titre))
+    .forEach(l => g.append(carte(l, false)));
+  zone.append(h, g);
+}
+
+function avecRetrait(el, l){
+  const w = document.createElement('div');
+  w.className = 'reprise-item';
+  const x = document.createElement('button');
+  x.className = 'retirer';
+  x.textContent = '✕';
+  x.title = 'Retirer de « Reprendre la lecture »';
+  x.setAttribute('aria-label', `Retirer ${l.titre} de « Reprendre la lecture »`);
+  x.addEventListener('click', e => { e.stopPropagation(); masquerReprise([l]); });
+  w.append(el, x);
+  return w;
+}
+
+async function masquerReprise(items, masquer = true){
+  const appliquer = valeur => items.forEach(l => {
+    if (!l.progression) return;
+    if (valeur) l.progression.masque = true; else delete l.progression.masque;
+  });
+  appliquer(masquer);
+  afficher();
+  try {
+    await api('api/reprise', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ids: items.map(l => l.id), masquer})
+    });
+  } catch (e) {
+    appliquer(!masquer);
+    afficher();
+    notifier("Impossible de modifier la liste : " + e.message);
+    return;
+  }
+  if (masquer) {
+    notifier(items.length > 1
+      ? `${items.length} livres retirés de la reprise.`
+      : `« ${items[0].titre} » retiré de la reprise.`,
+      () => masquerReprise(items, false));
+  } else {
+    $('toast').hidden = true;
+  }
+}
+
+let minuterieToast = null;
+function notifier(texte, annuler){
+  const t = $('toast');
+  $('toastMsg').textContent = texte;
+  $('toastAnnuler').hidden = !annuler;
+  $('toastAnnuler').onclick = () => { t.hidden = true; annuler(); };
+  t.hidden = false;
+  clearTimeout(minuterieToast);
+  minuterieToast = setTimeout(() => { t.hidden = true; }, 7000);
+}
+
+function majBascule(){
+  document.querySelectorAll('.bascule .btn').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.vue === vue)));
+}
+document.querySelectorAll('.bascule .btn').forEach(b => b.addEventListener('click', () => {
+  if (vue === b.dataset.vue) return;
+  vue = b.dataset.vue;
+  majBascule();
+  sauverPreferences();
+  afficher();
+}));
+
+function afficher(){
+  const q = $('recherche').value.trim().toLowerCase();
+  $('compte').textContent = livres.length ? ` ${livres.length} livre${livres.length > 1 ? 's' : ''}` : '';
+  const zone = $('etageres');
+
+  if (!livres.length) {
+    etat('Aucun livre trouvé', "Ce dossier Drive ne contient pas encore de fichier .cbz. Ajoutez-en puis touchez Actualiser.");
+    return;
+  }
+  const liste = livres
+    .filter(l => !q || l.titre.toLowerCase().includes(q) || l.serie.toLowerCase().includes(q))
+    .sort((a, b) => collator.compare(a.serie, b.serie) || collator.compare(a.titre, b.titre));
+  if (!liste.length) {
+    etat('', `Aucun titre ne correspond à « ${q} ».`);
+    return;
+  }
+
+  zone.replaceChildren();
+  if (!q && (vue === 'liste' || !dossierCourant)) {
+    const reprise = livres.filter(l => enCours(l) && !l.progression.masque).sort((a, b) => b.progression.maj - a.progression.maj).slice(0, 15);
+    if (reprise.length) zone.append(rayon('Reprendre la lecture', reprise, {reprendre: true}));
+  }
+  if (vue === 'liste') { vueListe(zone, liste, q); return; }
+  if (!q) { vueCouvertures(zone, liste); return; }
+  // Recherche en vue couvertures : résultats regroupés par série
+  const series = new Map();
+  for (const l of liste) {
+    if (!series.has(l.serie)) series.set(l.serie, []);
+    series.get(l.serie).push(l);
+  }
+  for (const [nom, items] of series) zone.append(rayon(nom, items));
+}
+
+/* ================= Profils ================= */
+let profil = null;
+let modeGestion = false;
+let formulaire = null;   // {type: 'creer'} ou {type: 'renommer', id}
+const initiale = nom => (nom.trim()[0] || '?').toLocaleUpperCase('fr');
+
+function avatar(p, petit){
+  const a = document.createElement('span');
+  a.className = 'avatar' + (petit ? ' petit' : '');
+  a.style.background = p.couleur;
+  a.textContent = initiale(p.nom);
+  a.setAttribute('aria-hidden', 'true');
+  return a;
+}
+
+function majProfil(){
+  $('btnProfil').hidden = !profil;
+  if (!profil) return;
+  const a = $('avatarActuel');
+  a.style.background = profil.couleur;
+  a.textContent = initiale(profil.nom);
+  $('nomActuel').textContent = profil.nom;
+  $('btnProfil').setAttribute('aria-label', 'Profil : ' + profil.nom + '. Changer de profil');
+}
+
+async function ouvrirProfils(){
+  const ecran = $('ecranProfils');
+  const dejaOuvert = !ecran.hidden;
+  ecran.hidden = false;
+  document.body.style.overflow = 'hidden';
+  if (!dejaOuvert) { modeGestion = false; fermerFormulaire(); }
+  try {
+    const d = await api('api/profils');
+    dessinerProfils(d.profils);
+  } catch (e) {
+    $('aideProfils').textContent = e.message;
+  }
+}
+
+function fermerProfils(){
+  $('ecranProfils').hidden = true;
+  document.body.style.overflow = '';
+}
+
+function dessinerProfils(liste){
+  const zone = $('tuiles');
+  zone.replaceChildren();
+  zone.classList.toggle('gestion', modeGestion);
+  $('titreProfils').textContent = modeGestion ? 'Gérer les profils' : 'Qui lit ?';
+  $('aideProfils').textContent = !liste.length
+    ? 'Créez un profil pour chaque lecteur : chacun garde sa propre progression.'
+    : modeGestion ? 'Renommez ou supprimez un profil.' : 'Choisissez votre profil sur cet appareil.';
+
+  for (const p of liste) {
+    const t = document.createElement(modeGestion ? 'div' : 'button');
+    t.className = 'tuile' + (profil && profil.id === p.id ? ' actuel' : '');
+    const nom = document.createElement('span');
+    nom.className = 'nom'; nom.textContent = p.nom;
+    const info = document.createElement('span');
+    info.className = 'info';
+    info.textContent = p.en_cours ? `${p.en_cours} en cours` : p.lus ? `${p.lus} lu${p.lus > 1 ? 's' : ''}` : 'Nouveau';
+    t.append(avatar(p), nom, info);
+    if (modeGestion) {
+      const actions = document.createElement('div');
+      actions.className = 'actions-tuile';
+      const ren = document.createElement('button');
+      ren.className = 'btn'; ren.textContent = 'Renommer';
+      ren.onclick = () => ouvrirFormulaire({type: 'renommer', id: p.id, nom: p.nom});
+      const sup = document.createElement('button');
+      sup.className = 'btn danger'; sup.textContent = 'Supprimer';
+      sup.onclick = () => supprimerProfil(p);
+      actions.append(ren, sup);
+      t.append(actions);
+    } else {
+      t.addEventListener('click', () => choisirProfil(p.id));
+    }
+    zone.append(t);
+  }
+  if (!modeGestion) {
+    const ajout = document.createElement('button');
+    ajout.className = 'tuile ajout';
+    ajout.innerHTML = '<span class="avatar" aria-hidden="true">+</span><span class="nom">Ajouter</span>';
+    ajout.addEventListener('click', () => ouvrirFormulaire({type: 'creer'}));
+    zone.append(ajout);
+  }
+  $('btnGerer').hidden = !liste.length;
+  $('btnGerer').textContent = modeGestion ? 'Terminé' : 'Gérer les profils';
+  $('btnRetourBiblio').hidden = !profil || modeGestion;
+  $('btnDossierDrive').hidden = modeGestion;
+  $('btnDeconnexion').hidden = modeGestion;
+  if (!liste.length && !formulaire) ouvrirFormulaire({type: 'creer'});
+}
+
+function ouvrirFormulaire(f){
+  formulaire = f;
+  $('formProfil').hidden = false;
+  $('labelProfil').textContent = f.type === 'creer' ? 'Prénom du nouveau lecteur' : 'Nouveau nom pour ' + f.nom;
+  $('validerProfil').textContent = f.type === 'creer' ? 'Créer' : 'Renommer';
+  $('nomProfil').value = f.type === 'creer' ? '' : f.nom;
+  $('erreurProfil').textContent = '';
+  $('nomProfil').focus();
+  $('formProfil').scrollIntoView({block: 'nearest'});
+}
+function fermerFormulaire(){
+  formulaire = null;
+  $('formProfil').hidden = true;
+}
+
+$('formProfil').addEventListener('submit', async e => {
+  e.preventDefault();
+  const nom = $('nomProfil').value.trim();
+  const bouton = $('validerProfil');
+  bouton.disabled = true;
+  try {
+    if (formulaire.type === 'creer') {
+      await envoyerProgression();
+      const d = await api('api/profils', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({nom})});
+      fermerFormulaire();
+      apresChoix(d.profil);
+    } else {
+      await api('api/profils/renommer', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id: formulaire.id, nom})});
+      if (profil && profil.id === formulaire.id) { profil.nom = nom; majProfil(); }
+      fermerFormulaire();
+      ouvrirProfils();
+    }
+  } catch (err) {
+    $('erreurProfil').textContent = err.message;
+  } finally {
+    bouton.disabled = false;
+  }
+});
+$('annulerProfil').onclick = fermerFormulaire;
+$('btnGerer').onclick = () => { modeGestion = !modeGestion; fermerFormulaire(); ouvrirProfils(); };
+$('btnRetourBiblio').onclick = fermerProfils;
+$('btnProfil').onclick = ouvrirProfils;
+
+async function choisirProfil(id){
+  if (profil && profil.id === id) { fermerProfils(); return; }
+  await envoyerProgression();
+  try {
+    const d = await api('api/profil', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id})});
+    apresChoix(d.profil);
+  } catch (e) {
+    $('aideProfils').textContent = e.message;
+  }
+}
+
+function apresChoix(p){
+  $('toast').hidden = true;
+  profil = p;
+  majProfil();
+  fermerProfils();
+  prefsChargees = false;
+  livres = [];
+  ouverts.clear();
+  dossierCourant = '';
+  history.replaceState({dossier: ''}, '');
+  $('recherche').value = '';
+  etat('', 'Chargement de la bibliothèque…');
+  charger(false);
+}
+
+async function supprimerProfil(p){
+  if (!confirm(`Supprimer le profil « ${p.nom} » ?\nSa progression de lecture sera effacée.`)) return;
+  try {
+    await api('api/profils/supprimer', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id: p.id})});
+    if (profil && profil.id === p.id) { profil = null; majProfil(); livres = []; }
+    ouvrirProfils();
+  } catch (e) {
+    $('aideProfils').textContent = e.message;
+  }
+}
+
+addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !$('ecranProfils').hidden && profil) {
+    if (formulaire) fermerFormulaire(); else fermerProfils();
+  }
+});
+
+$('recherche').addEventListener('input', afficher);
+$('btnActualiser').addEventListener('click', () => charger(true));
+
+/* ================= Liseuse ================= */
+const reader = $('reader'), stage = $('stage'), scroller = $('scroller');
+
+
+function viderStage(){ stage.querySelectorAll('img,.msg,.fin').forEach(n => n.remove()); }
+function message(t){
+  viderStage();
+  const d = document.createElement('div');
+  d.className = 'msg'; d.textContent = t;
+  stage.append(d);
+}
+
+let enAttente = null, minuterie = null;
+function noterProgression(){
+  const vue = Math.min(R.index + (R.mode === 'double' ? R.step - 1 : 0), R.total - 1);
+  R.livre.progression = {page: vue, total: R.total, maj: Date.now() / 1000};
+  enAttente = {id: R.livre.id, page: vue};
+  clearTimeout(minuterie);
+  minuterie = setTimeout(envoyerProgression, 700);
+}
+function envoyerProgression(){
+  clearTimeout(minuterie);
+  if (!enAttente) return Promise.resolve();
+  const corps = JSON.stringify(enAttente);
+  enAttente = null;
+  return api('api/progression', {method: 'POST', body: corps}).catch(() => {});
+}
+// Quand on quitte l'application, la progression est enregistrée tout de suite dans Drive
+const toutEnregistrer = () => envoyerProgression().then(() => sauvegarder(true));
+addEventListener('pagehide', toutEnregistrer);
+document.addEventListener('visibilitychange', () => { if (document.hidden) toutEnregistrer(); });
+
+function sauverPreferences(){
+  api('api/preferences', {
+    method: 'POST',
+    body: JSON.stringify({appareil, mode: R.mode, fit: R.fit, rtl: R.rtl, vue})
+  }).catch(() => {});
+}
+
+async function ouvrir(l){
+  envoyerProgression();
+  R.livre = l;
+  R.token++;
+  R.fin = false;
+  $('rTitre').textContent = l.titre;
+  $('selMode').value = R.mode;
+  $('selFit').value = R.fit;
+  $('btnRtl').classList.toggle('on', R.rtl);
+  if (!reader.classList.contains('open')) {
+    reader.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    history.replaceState(Object.assign({}, history.state, {scroll: scrollY}), '');
+    history.pushState({dossier: dossierCourant, lecture: true}, '');
+  }
+  scroller.replaceChildren();
+  message('Ouverture…');
+  const token = R.token;
+  try {
+    const d = await api('api/livre/' + l.id);
+    if (token !== R.token) return;
+    R.total = d.pages;
+  } catch (e) {
+    message(e.message);
+    return;
+  }
+  if (!R.total) { message('Ce fichier ne contient aucune image.'); return; }
+  const p = l.progression;
+  R.index = p && p.page < R.total - 1 ? p.page : 0;
+  $('curseur').max = R.total;
+  appliquerMode();
+}
+
+function fermer(depuisHistorique){
+  if (!reader.classList.contains('open')) return;
+  envoyerProgression();
+  reader.classList.remove('open');
+  document.body.style.overflow = '';
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  R.token++;
+  R.livre = null;
+  viderStage();
+  scroller.replaceChildren();
+  if (!depuisHistorique && history.state && history.state.lecture) {
+    fermetureEnCours = true;
+    history.back();
+  }
+  afficher();
+}
+// Le bouton « retour » du téléphone ferme la liseuse au lieu de quitter la page
+// et remonte d'un dossier dans la vue couvertures
+addEventListener('popstate', () => {
+  if (fermetureEnCours) { fermetureEnCours = false; return; }
+  if (reader.classList.contains('open')) { fermer(true); return; }
+  const st = history.state || {};
+  dossierCourant = st.dossier || '';
+  afficher();
+  scrollTo(0, st.scroll || 0);
+});
+if (!history.state) history.replaceState({dossier: ''}, '');
+else dossierCourant = history.state.dossier || '';
+
+function majBarre(){
+  const fin = R.mode === 'double' && R.step === 2 ? R.index + 2 : R.index + 1;
+  $('pageLabel').textContent = (fin > R.index + 1 ? `${R.index + 1}-${fin}` : `${R.index + 1}`) + ' / ' + R.total;
+  $('curseur').value = R.index + 1;
+}
+
+function appliquerMode(){
+  const defil = R.mode === 'scroll';
+  stage.style.display = defil ? 'none' : '';
+  scroller.classList.toggle('on', defil);
+  $('selFit').disabled = defil;
+  $('btnRtl').disabled = defil;
+  stage.className = 'fit-' + R.fit + (R.mode === 'double' ? ' double' : '') + (R.rtl ? ' rtl' : '');
+  $('curseur').style.direction = R.rtl && !defil ? 'rtl' : 'ltr';
+  if (defil) construireDefilement();
+  else { scroller.replaceChildren(); afficherPage(R.index); }
+}
+
+function chargerImage(i){
+  const id = R.livre.id;
+  return new Promise(res => {
+    const im = new Image();
+    im.alt = `Page ${i + 1}`;
+    im.decoding = 'async';
+    im.onload = im.onerror = () => res(im);
+    urlPage(id, i).then(u => { im.src = u; }).catch(() => res(im));
+  });
+}
+
+function precharger(i){
+  if (i < 0 || i >= R.total) return;
+  urlPage(R.livre.id, i).catch(() => {});
+}
+
+async function afficherPage(i){
+  i = Math.max(0, Math.min(R.total - 1, i));
+  R.index = i;
+  R.fin = false;
+  const token = ++R.token;
+  const indices = [i];
+  if (R.mode === 'double' && i > 0 && i + 1 < R.total) indices.push(i + 1);
+  const imgs = await Promise.all(indices.map(chargerImage));
+  if (token !== R.token) return;
+  if (!imgs[0].naturalWidth) { message("Impossible d'afficher cette page."); majBarre(); return; }
+
+  // Une planche déjà en format paysage s'affiche seule
+  if (imgs.length === 2 && (imgs[0].naturalWidth > imgs[0].naturalHeight || imgs[1].naturalWidth > imgs[1].naturalHeight)) {
+    imgs.length = 1;
+  }
+  R.step = imgs.length;
+  viderStage();
+  stage.append(...imgs);
+  stage.scrollTop = 0;
+  stage.scrollLeft = R.rtl ? stage.scrollWidth : 0;
+  majBarre();
+  noterProgression();
+  for (let k = 1; k <= 4; k++) precharger(i + R.step - 1 + k);
+  precharger(i - 1);
+}
+
+function livreSuivant(){
+  const serie = livres.filter(x => x.serie === R.livre.serie).sort((a, b) => collator.compare(a.titre, b.titre));
+  return serie[serie.findIndex(x => x.id === R.livre.id) + 1];
+}
+function blocFin(){
+  const d = document.createElement('div');
+  d.className = 'fin';
+  const h = document.createElement('h3');
+  h.textContent = 'Fin de ' + R.livre.titre;
+  d.append(h);
+  const suivant = livreSuivant();
+  if (suivant) {
+    const p = document.createElement('p'); p.textContent = 'Suivant dans la série : ' + suivant.titre;
+    const b = document.createElement('button'); b.className = 'btn primary'; b.textContent = 'Lire la suite';
+    b.onclick = e => { e.stopPropagation(); ouvrir(suivant); };
+    d.append(p, b);
+  }
+  const r = document.createElement('button'); r.className = 'btn'; r.textContent = 'Retour à la bibliothèque';
+  r.onclick = e => { e.stopPropagation(); fermer(); };
+  d.append(r);
+  return d;
+}
+function afficherFin(){
+  R.token++;
+  R.fin = true;
+  R.index = R.total - 1;
+  R.step = 1;
+  noterProgression();
+  viderStage();
+  stage.append(blocFin());
+}
+
+function suivante(){
+  if (R.mode === 'scroll') return defiler(1);
+  if (R.fin) return;
+  const n = R.mode === 'double' ? (R.index === 0 ? 1 : R.index + R.step) : R.index + 1;
+  if (n < R.total) afficherPage(n); else afficherFin();
+}
+function precedente(){
+  if (R.mode === 'scroll') return defiler(-1);
+  if (R.fin) return afficherPage(R.total - 1);
+  if (R.index === 0) return;
+  afficherPage(R.mode === 'double' ? (R.index <= 1 ? 0 : R.index - 2) : R.index - 1);
+}
+function tourner(cote){ ((cote === 'right') !== R.rtl) ? suivante() : precedente(); }
+
+/* Défilement vertical (webtoon) */
+let obsChargement = null, obsPosition = null;
+function construireDefilement(){
+  obsChargement?.disconnect();
+  obsPosition?.disconnect();
+  scroller.replaceChildren();
+  const token = R.token;
+  obsChargement = new IntersectionObserver(entrees => {
+    for (const en of entrees) {
+      if (!en.isIntersecting) continue;
+      obsChargement.unobserve(en.target);
+      const im = new Image();
+      im.alt = `Page ${+en.target.dataset.i + 1}`;
+      im.onload = () => { if (token === R.token) en.target.classList.add('loaded'); };
+      urlPage(R.livre.id, +en.target.dataset.i).then(u => { if (token === R.token) im.src = u; }).catch(() => {});
+      en.target.append(im);
+    }
+  }, {root: scroller, rootMargin: '2000px 0px'});
+  obsPosition = new IntersectionObserver(entrees => {
+    for (const en of entrees) {
+      if (en.isIntersecting) { R.index = +en.target.dataset.i; majBarre(); noterProgression(); }
+    }
+  }, {root: scroller, rootMargin: '-45% 0px -45% 0px'});
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < R.total; i++) {
+    const d = document.createElement('div');
+    d.className = 'pg'; d.dataset.i = i;
+    frag.append(d);
+  }
+  frag.append(blocFin());
+  scroller.append(frag);
+  scroller.querySelectorAll('.pg').forEach(d => { obsChargement.observe(d); obsPosition.observe(d); });
+  allerDefilement(R.index);
+  majBarre();
+}
+function defiler(sens){ scroller.scrollBy({top: sens * scroller.clientHeight * 0.85, behavior: 'smooth'}); }
+function allerDefilement(i){ scroller.children[i]?.scrollIntoView(); }
+
+/* Contrôles */
+$('selMode').onchange = e => { R.mode = e.target.value; R.fin = false; sauverPreferences(); appliquerMode(); };
+$('selFit').onchange = e => { R.fit = e.target.value; sauverPreferences(); appliquerMode(); };
+$('btnRtl').onclick = () => {
+  R.rtl = !R.rtl;
+  $('btnRtl').classList.toggle('on', R.rtl);
+  sauverPreferences();
+  appliquerMode();
+};
+$('btnFermer').onclick = () => fermer();
+$('btnFs').onclick = pleinEcran;
+$('btnPrec').onclick = () => tourner('left');
+$('btnSuiv').onclick = () => tourner('right');
+$('curseur').oninput = e => {
+  const i = e.target.value - 1;
+  if (R.mode === 'scroll') allerDefilement(i); else afficherPage(i);
+};
+stage.querySelectorAll('.zone').forEach(z => z.addEventListener('click', e => { e.stopPropagation(); tourner(z.dataset.dir); }));
+stage.addEventListener('click', () => reader.classList.toggle('hide-ui'));
+scroller.addEventListener('click', e => { if (!e.target.closest('button')) reader.classList.toggle('hide-ui'); });
+
+function pleinEcran(){
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  else if (reader.requestFullscreen) reader.requestFullscreen().catch(() => {});
+}
+
+/* Glisser le doigt pour tourner les pages */
+let toucher = null;
+stage.addEventListener('touchstart', e => {
+  const zoom = window.visualViewport && visualViewport.scale > 1.01;
+  toucher = (e.touches.length === 1 && !zoom)
+    ? {x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now()} : null;
+}, {passive: true});
+stage.addEventListener('touchend', e => {
+  if (!toucher) return;
+  const t = e.changedTouches[0], t0 = toucher;
+  toucher = null;
+  const dx = t.clientX - t0.x, dy = t.clientY - t0.y;
+  if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5 || Date.now() - t0.t > 800) return;
+  if (stage.scrollWidth > stage.clientWidth + 2) return;   // image plus large que l'écran : on laisse défiler
+  tourner(dx < 0 ? 'right' : 'left');
+}, {passive: true});
+
+addEventListener('keydown', e => {
+  if (!reader.classList.contains('open')) return;
+  if ((e.target.tagName === 'SELECT' || e.target.type === 'range') && e.key !== 'Escape') return;
+  const defil = R.mode === 'scroll';
+  switch (e.key) {
+    case 'ArrowRight': case 'd': tourner('right'); break;
+    case 'ArrowLeft': case 'q': case 'a': tourner('left'); break;
+    case ' ': case 'PageDown': suivante(); break;
+    case 'PageUp': precedente(); break;
+    case 'Home': defil ? allerDefilement(0) : afficherPage(0); break;
+    case 'End': defil ? allerDefilement(R.total - 1) : afficherPage(R.total - 1); break;
+    case 'f': case 'F': pleinEcran(); break;
+    case 'h': case 'H': reader.classList.toggle('hide-ui'); break;
+    case 'Escape': if (!document.fullscreenElement) fermer(); return;
+    default: return;
+  }
+  e.preventDefault();
+});
+
+demarrer();   // connexion Google, puis bibliothèque
+</script>
+</body>
+</html>
