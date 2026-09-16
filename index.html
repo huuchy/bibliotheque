@@ -213,6 +213,16 @@ h2.rayon .nb{font-family:var(--ui);font-size:13px;font-weight:400;color:var(--mu
   padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));background:var(--paper);color:var(--ink);font-weight:600;
 }
 
+/* Version et mise à jour */
+.version{color:var(--muted);font-size:12px;text-align:center;margin:0;opacity:.85}
+footer.version{padding:10px 20px 28px}
+#ecranGoogle .version,#ecranProfils .version{margin-top:26px}
+#bandeauMaj{
+  position:fixed;left:0;right:0;bottom:0;z-index:45;display:flex;justify-content:center;align-items:center;gap:14px;
+  padding:10px 14px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:var(--cyan);color:var(--ink);font-weight:600;
+}
+#bandeauMaj .btn{background:var(--ink);color:var(--paper)}
+
 .etat{max-width:520px;margin:12vh auto;text-align:center}
 .etat h2{font-family:var(--display);font-size:32px;margin:0 0 8px}
 .etat p{color:var(--muted);margin:0 0 20px}
@@ -316,6 +326,7 @@ dialog form{text-align:right;margin-top:8px}
 <main id="etageres">
   <div class="etat"><p></p></div>
 </main>
+<footer class="version"></footer>
 
 <section id="ecranGoogle" hidden aria-labelledby="titreGoogle">
   <h2 id="titreGoogle">Bibliothèque</h2>
@@ -328,7 +339,13 @@ dialog form{text-align:right;margin-top:8px}
     <p class="erreur" id="erreurDossier"></p>
     <button class="btn primary">Ouvrir ce dossier</button>
   </form>
+  <p class="version"></p>
 </section>
+
+<div id="bandeauMaj" role="status" hidden>
+  <span>Nouvelle version disponible</span>
+  <button class="btn" id="btnMaj">Recharger</button>
+</div>
 
 <div id="bandeauSession" role="alert" hidden>
   <span>Session Google expirée.</span>
@@ -354,6 +371,7 @@ dialog form{text-align:right;margin-top:8px}
     <button class="btn" id="btnDossierDrive">Changer de dossier Drive</button>
     <button class="btn" id="btnDeconnexion">Se déconnecter de Google</button>
   </div>
+  <p class="version"></p>
 </section>
 
 <div id="toast" role="status" hidden>
@@ -405,6 +423,34 @@ let dossierCourant = '';     // dossier affiché dans la vue couvertures
 let fermetureEnCours = false;
 let prefsChargees = false;
 const R = {livre: null, total: 0, index: 0, step: 1, mode: 'single', fit: 'height', rtl: false, token: 0, fin: false};
+
+/* ======================================================================
+   VERSION : augmentée à chaque mise à jour du fichier
+   ====================================================================== */
+const VERSION = {numero: 3, date: '2026-09-16'};
+
+function texteVersion(v){
+  const [a, m, j] = v.date.split('-');
+  return `Version n°${v.numero} du ${j}/${m}/${a}`;
+}
+document.querySelectorAll('.version').forEach(e => { e.textContent = texteVersion(VERSION); });
+
+// Compare avec le fichier publié sur GitHub (en contournant le cache)
+async function verifierMiseAJour(){
+  if (!location.protocol.startsWith('http')) return;
+  try {
+    const r = await fetch(location.pathname + '?maj=' + Date.now(), {cache: 'no-store'});
+    if (!r.ok) return;
+    const m = (await r.text()).match(/const VERSION = \{numero: (\d+)/);
+    if (m && Number(m[1]) > VERSION.numero) document.getElementById('bandeauMaj').hidden = false;
+  } catch {}
+}
+document.getElementById('btnMaj').addEventListener('click', async () => {
+  try { await toutEnregistrer(); } catch {}
+  location.reload();
+});
+verifierMiseAJour();
+document.addEventListener('visibilitychange', () => { if (!document.hidden) verifierMiseAJour(); });
 
 /* ======================================================================
    CONFIGURATION : à remplir une seule fois (voir GUIDE.md)
