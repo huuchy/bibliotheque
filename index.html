@@ -427,7 +427,7 @@ const R = {livre: null, total: 0, index: 0, step: 1, mode: 'single', fit: 'heigh
 /* ======================================================================
    VERSION : augmentée à chaque mise à jour du fichier
    ====================================================================== */
-const VERSION = {numero: 3, date: '2026-09-16'};
+const VERSION = {numero: 4, date: '2026-09-16'};
 
 function texteVersion(v){
   const [a, m, j] = v.date.split('-');
@@ -1194,6 +1194,7 @@ async function charger(actualiser){
     profil = d.profil;
     majProfil();
     livres = d.livres;
+    calculerOeuvres();
     $('titre').firstChild.textContent = d.nom;
     document.title = d.nom;
     if (!prefsChargees) {
@@ -1317,6 +1318,31 @@ function rayon(titre, items, options = {}){
   return frag;
 }
 
+/* ----- Nombre d'œuvres -----
+   Une œuvre = un dossier qui contient des livres et aucun sous-dossier (une série).
+   Un livre posé dans un dossier qui contient aussi des sous-dossiers
+   (la racine, ou plus tard un dossier de genre) compte comme une œuvre à lui seul. */
+let dossiersAvecSous = new Set();
+function calculerOeuvres(){
+  dossiersAvecSous = new Set();
+  for (const l of livres) {
+    const parts = (l.dossier || '').split('/').filter(Boolean);
+    for (let i = 0; i < parts.length; i++) dossiersAvecSous.add(parts.slice(0, i).join('/'));
+  }
+}
+function nbOeuvres(liste){
+  return new Set(liste.map(l => {
+    const d = l.dossier || '';
+    return dossiersAvecSous.has(d) ? 'livre:' + l.id : 'dossier:' + d;
+  })).size;
+}
+const pluriel = (n, mot, motPluriel) => `${n} ${n > 1 ? (motPluriel || mot + 's') : mot}`;
+function texteCompte(liste, toujoursOeuvres){
+  const o = nbOeuvres(liste);
+  const livresTxt = pluriel(liste.length, 'livre');
+  return (o > 1 || toujoursOeuvres) ? `${pluriel(o, 'œuvre')}, ${livresTxt}` : livresTxt;
+}
+
 /* ----- Vue liste : arborescence des dossiers ----- */
 function construireArbre(liste){
   const racine = {nom: '', chemin: '', dossiers: new Map(), livres: []};
@@ -1346,10 +1372,7 @@ function ligneDossier(d, niveau, ouvert, forceOuvert){
   b.setAttribute('aria-expanded', String(ouvert));
   b.innerHTML = '<span class="chev" aria-hidden="true">▶</span><span class="n"></span><span class="st"></span><span class="s"></span>';
   b.querySelector('.n').textContent = d.nom;
-  const nbSous = d.dossiers.size;
-  b.querySelector('.s').textContent =
-    `${tous.length} livre${tous.length > 1 ? 's' : ''}` +
-    (nbSous ? `, ${nbSous} dossier${nbSous > 1 ? 's' : ''}` : '');
+  b.querySelector('.s').textContent = texteCompte(tous);
   const st = b.querySelector('.st');
   if (lus === tous.length) { st.textContent = 'Tout lu'; st.classList.add('lu'); }
   else if (lus) st.textContent = `${lus} / ${tous.length} lus`;
@@ -1478,7 +1501,7 @@ function carteDossier(d){
     cover.append(bar);
   }
   b.querySelector('.t').textContent = d.nom;
-  let meta = `${tous.length} livre${tous.length > 1 ? 's' : ''}`;
+  let meta = texteCompte(tous);
   if (lus && lus < tous.length) meta += `, ${lus} lu${lus > 1 ? 's' : ''}`;
   else if (!lus && commences) meta += ', en cours';
   b.querySelector('.m').textContent = meta;
@@ -1538,10 +1561,9 @@ function vueCouvertures(zone, liste){
   const h = document.createElement('h2');
   h.className = 'rayon';
   h.textContent = dossierCourant ? n.nom : 'Tous les livres';
-  const total = tousLesLivres(n).length;
   const nb = document.createElement('span');
   nb.className = 'nb';
-  nb.textContent = total + (total > 1 ? ' livres' : ' livre');
+  nb.textContent = texteCompte(tousLesLivres(n), !dossierCourant);
   h.append(nb);
 
   const g = document.createElement('div');
@@ -1620,7 +1642,7 @@ document.querySelectorAll('.bascule .btn').forEach(b => b.addEventListener('clic
 
 function afficher(){
   const q = $('recherche').value.trim().toLowerCase();
-  $('compte').textContent = livres.length ? ` ${livres.length} livre${livres.length > 1 ? 's' : ''}` : '';
+  $('compte').textContent = livres.length ? ' ' + texteCompte(livres, true) : '';
   const zone = $('etageres');
 
   if (!livres.length) {
