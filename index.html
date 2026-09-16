@@ -209,7 +209,7 @@ h2.rayon .nb{font-family:var(--ui);font-size:13px;font-weight:400;color:var(--mu
 #formDossier input{background:var(--ink-2);border:1px solid var(--ink-3);border-radius:4px;padding:11px 12px;font-size:16px}
 .aide-champ{color:var(--muted);font-size:13px;margin:0}
 #bandeauSession{
-  position:fixed;top:0;left:0;right:0;z-index:40;display:flex;justify-content:center;align-items:center;gap:14px;
+  position:fixed;top:0;left:0;right:0;z-index:60;display:flex;justify-content:center;align-items:center;gap:14px;
   padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));background:var(--paper);color:var(--ink);font-weight:600;
 }
 
@@ -284,6 +284,60 @@ body.raccourcis-fixes main{padding-top:calc(22px + 42px)}
 .raccourci.favoris{color:var(--coeur)}
 .raccourci .nb{color:var(--paper);font-weight:400;opacity:.8}
 .raccourci:hover{background:var(--ink-3)}
+
+/* Assistant IA */
+.fab-ia{
+  position:fixed;right:16px;bottom:max(16px,env(safe-area-inset-bottom));z-index:15;
+  border:0;border-radius:26px;padding:11px 18px;cursor:pointer;
+  background:var(--yellow);color:var(--ink);font-weight:700;font-size:15px;
+  box-shadow:0 8px 20px rgba(0,0,0,.5);
+}
+.fab-ia:hover{background:#ffd34d}
+body:has(#bandeauMaj:not([hidden])) .fab-ia{bottom:76px}
+body:has(.fab-ia:not([hidden])) footer.version{padding-bottom:88px}
+#panneauIA{
+  position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;
+  background-color:var(--ink);
+  background-image:radial-gradient(rgba(255,255,255,.035) 1px,transparent 1.2px);background-size:7px 7px;
+}
+@media (min-width:760px){
+  #panneauIA{left:auto;width:430px;border-left:3px solid var(--yellow);box-shadow:-12px 0 30px rgba(0,0,0,.5)}
+}
+.ia-tete{
+  display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;
+  padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));
+  background:var(--ink);border-bottom:2px solid var(--yellow);
+}
+.ia-tete h2{font-family:var(--display);font-size:21px;margin:0 auto 0 0}
+.ia-tete .btn{padding:6px 11px}
+.ia-sujet{flex-basis:100%;margin:0;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ia-fil{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch}
+.bulle{max-width:88%;padding:10px 13px;border-radius:14px;line-height:1.45;overflow-wrap:anywhere}
+.bulle.moi{align-self:flex-end;background:var(--cyan);color:var(--ink);border-bottom-right-radius:4px;white-space:pre-wrap}
+.bulle.moi.echec{opacity:.55}
+.bulle.moi img{display:block;max-width:140px;max-height:200px;border-radius:6px;margin-bottom:6px}
+.bulle.ia{align-self:flex-start;background:var(--ink-2);border-bottom-left-radius:4px}
+.bulle.ia p{margin:0 0 8px}
+.bulle.ia p:last-child,.bulle.ia ul:last-child{margin-bottom:0}
+.bulle.ia ul{margin:2px 0 8px;padding-left:20px}
+.bulle.ia li{margin-bottom:3px}
+.bulle.attente{color:var(--muted);animation:respire 1.4s ease-in-out infinite}
+@keyframes respire{50%{opacity:.45}}
+.bulle.erreur{align-self:stretch;max-width:none;background:#4a2530;color:#ffd9d9;font-size:14px}
+.ia-suggestions{display:flex;gap:8px;overflow-x:auto;padding:0 14px 10px;scrollbar-width:none}
+.ia-suggestions button{
+  flex:none;border:1px solid var(--ink-3);background:var(--ink-2);border-radius:16px;
+  padding:7px 12px;font-size:13px;cursor:pointer;
+}
+.ia-suggestions button:hover{border-color:var(--yellow)}
+.ia-saisie{display:flex;align-items:flex-end;gap:8px;padding:10px 14px 6px;border-top:1px solid var(--ink-3);background:var(--ink)}
+.ia-saisie textarea{
+  flex:1;resize:none;max-height:120px;min-height:42px;padding:10px 12px;border-radius:10px;
+  background:var(--ink-2);border:1px solid var(--ink-3);font:inherit;font-size:16px;line-height:1.35;
+}
+.ia-saisie .btn{padding:10px 14px}
+.ia-info{margin:0;padding:0 14px max(8px,env(safe-area-inset-bottom));background:var(--ink);font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.bulle.attente{animation:none}}
 
 .etat{max-width:520px;margin:12vh auto;text-align:center}
 .etat h2{font-family:var(--display);font-size:32px;margin:0 0 8px}
@@ -453,6 +507,24 @@ dialog form{text-align:right;margin-top:8px}
   <p class="version"></p>
 </section>
 
+<button id="btnIA" class="fab-ia" hidden aria-label="Ouvrir l'assistant de lecture"><span aria-hidden="true">✦</span> IA</button>
+
+<section id="panneauIA" role="dialog" aria-modal="true" aria-labelledby="titreIA" hidden>
+  <div class="ia-tete">
+    <h2 id="titreIA">Assistant lecture</h2>
+    <button class="btn" id="iaNouvelle" type="button">Nouvelle</button>
+    <button class="btn" id="iaFermer" type="button" aria-label="Fermer l'assistant">✕</button>
+    <p class="ia-sujet" id="iaSujet"></p>
+  </div>
+  <div class="ia-fil" id="iaFil" aria-live="polite"></div>
+  <div class="ia-suggestions" id="iaSuggestions"></div>
+  <form class="ia-saisie" id="iaForm">
+    <textarea id="iaTexte" rows="1" maxlength="2000" placeholder="Posez votre question…" aria-label="Votre question"></textarea>
+    <button class="btn primary" id="iaEnvoyer">Envoyer</button>
+  </form>
+  <p class="ia-info" id="iaInfo"></p>
+</section>
+
 <div id="toast" role="status" hidden>
   <span id="toastMsg"></span>
   <button class="btn" id="toastAnnuler">Annuler</button>
@@ -474,6 +546,7 @@ dialog form{text-align:right;margin-top:8px}
       <option value="original">Taille réelle</option>
     </select>
     <button class="btn" id="btnRtl" title="Sens de lecture japonais (droite vers gauche)">Manga</button>
+    <button class="btn" id="btnIALecture" title="Demander à l'assistant" hidden>✦ IA</button>
     <button class="btn" id="btnFs" title="Plein écran (F)">Plein écran</button>
     <button class="btn" id="btnFermer" title="Fermer (Échap)">Fermer</button>
   </div>
@@ -545,7 +618,7 @@ const R = {livre: null, total: 0, index: 0, step: 1, mode: 'single', fit: 'heigh
 /* ======================================================================
    VERSION : augmentée à chaque mise à jour du fichier
    ====================================================================== */
-const VERSION = {numero: 7, date: '2026-09-16'};
+const VERSION = {numero: 9, date: '2026-09-16'};
 
 function texteVersion(v){
   const [a, m, j] = v.date.split('-');
@@ -579,6 +652,9 @@ const CONFIG = {
   // Facultatif : lien du dossier Drive qui contient les mangas.
   // Laissé vide, il est demandé à la première connexion puis mémorisé dans le compte Google.
   DOSSIER: '',
+  // Facultatif : adresse du relais de l'assistant IA (voir relais-ia/GUIDE-RELAIS.md).
+  // Laissée vide, le bouton de l'assistant n'apparaît pas.
+  RELAIS_IA: 'https://bibliotheque-ia.01-kevin-y.workers.dev',
 };
 
 /* ======================================================================
@@ -651,6 +727,14 @@ function demanderJeton(){
 
 const jetonValide = () => G.jeton && Date.now() < G.expire;
 
+// Si un renouvellement de session est en cours (lancé par l'appui), on l'attend
+async function jetonPret(){
+  if (!jetonValide() && G.enCours) {
+    try { await G.enCours; } catch {}
+  }
+  return jetonValide();
+}
+
 function sessionExpiree(){
   if (!D.donnees) return;   // pas encore connecté : l'écran de connexion s'en charge
   $('bandeauSession').hidden = false;
@@ -670,7 +754,7 @@ async function drive(chemin, o = {}){
     if (v !== undefined && v !== null) url.searchParams.set(k, v);
   }
   for (let essai = 0; ; essai++) {
-    if (!jetonValide()) {
+    if (!(await jetonPret())) {
       sessionExpiree();
       throw new Error('Session Google expirée : touchez « Reconnecter ».');
     }
@@ -2055,6 +2139,7 @@ function avatar(p, petit){
 
 function majProfil(){
   $('btnProfil').hidden = !profil;
+  $('btnIA').hidden = !(profil && iaActive());
   if (!profil) return;
   const a = $('avatarActuel');
   a.style.background = profil.couleur;
@@ -2187,6 +2272,7 @@ async function choisirProfil(id){
 
 function apresChoix(p){
   $('toast').hidden = true;
+  if (typeof IA !== 'undefined') { IA.messages = []; IA.sujet = null; }
   profil = p;
   majProfil();
   fermerProfils();
@@ -2312,6 +2398,7 @@ function fermer(depuisHistorique){
 // et remonte d'un dossier dans la vue couvertures
 addEventListener('popstate', () => {
   if (fermetureEnCours) { fermetureEnCours = false; return; }
+  if (!$('panneauIA').hidden) { fermerIA(true); return; }
   if (reader.classList.contains('open')) { fermer(true); return; }
   const st = history.state || {};
   dossierCourant = st.dossier || '';
@@ -2509,7 +2596,7 @@ stage.addEventListener('touchend', e => {
 }, {passive: true});
 
 addEventListener('keydown', e => {
-  if (!reader.classList.contains('open')) return;
+  if (!reader.classList.contains('open') || !$('panneauIA').hidden) return;
   if ((e.target.tagName === 'SELECT' || e.target.type === 'range') && e.key !== 'Escape') return;
   const defil = R.mode === 'scroll';
   switch (e.key) {
@@ -2526,6 +2613,305 @@ addEventListener('keydown', e => {
   }
   e.preventDefault();
 });
+
+/* ================= Assistant IA (via le relais Cloudflare) ================= */
+const IA = {messages: [], sujet: null, enCours: false, restants: null, statutVerifie: false};
+const iaActive = () => !!CONFIG.RELAIS_IA;
+const adresseRelais = chemin => CONFIG.RELAIS_IA.replace(/\/+$/, '') + chemin;
+const ecranTactile = matchMedia('(pointer: coarse)').matches;
+
+async function appelRelais(chemin, corps){
+  if (!(await jetonPret())) {
+    sessionExpiree();
+    throw new Error('Session Google expirée : touchez « Reconnecter » en haut, puis réessayez.');
+  }
+  let r;
+  try {
+    r = await fetch(adresseRelais(chemin), {
+      method: corps ? 'POST' : 'GET',
+      headers: Object.assign({Authorization: 'Bearer ' + G.jeton}, corps ? {'Content-Type': 'application/json'} : {}),
+      body: corps ? JSON.stringify(corps) : undefined,
+    });
+  } catch {
+    throw new Error("Le relais de l'assistant ne répond pas. Vérifiez la connexion Internet et l'adresse RELAIS_IA.");
+  }
+  const d = await r.json().catch(() => ({}));
+  if (typeof d.restants === 'number') IA.restants = d.restants;
+  if (!r.ok) throw new Error(d.erreur || `Erreur du relais (${r.status}).`);
+  return d;
+}
+
+/* ----- Résumé des lectures envoyé à l'IA ----- */
+function oeuvresPourIA(){
+  const groupes = new Map();
+  for (const l of livres) {
+    const d = l.dossier || '';
+    const isole = dossiersAvecSous.has(d);
+    const cle = isole ? 'l:' + l.id : 'd:' + d;
+    if (!groupes.has(cle)) {
+      groupes.set(cle, {
+        nom: isole ? (d ? d + '/' : '') + l.titre : d,
+        favori: isole ? favoris.has('l:' + l.id) : favoris.has('d:' + idsDossiers.get(d)),
+        livres: [],
+      });
+    }
+    groupes.get(cle).livres.push(l);
+  }
+  return [...groupes.values()].sort((a, b) => collator.compare(a.nom, b.nom));
+}
+
+function etatOeuvre(g){
+  const n = g.livres.length;
+  const lus = g.livres.filter(termine).length;
+  const enCoursL = g.livres.filter(enCours).sort((a, b) => b.progression.maj - a.progression.maj)[0];
+  if (lus === n) return n > 1 ? 'terminée' : 'lu';
+  const parts = [];
+  if (enCoursL) {
+    const p = enCoursL.progression;
+    parts.push(`en cours : « ${enCoursL.titre} » page ${p.page + 1}/${p.total}` + (p.masque ? ' (retiré de la reprise, peut-être abandonné)' : ''));
+  }
+  if (lus) parts.push(`${lus}/${n} tomes lus`);
+  return parts.join(', ') || 'pas commencée';
+}
+
+function contexteLecture(){
+  const l = [];
+  l.push(`Lecteur : ${profil ? profil.nom : 'inconnu'}. Date : ${new Date().toLocaleDateString('fr-FR')}.`);
+  if (IA.sujet) {
+    const s = IA.sujet;
+    l.push(`LECTURE AFFICHÉE À L'ÉCRAN : « ${s.livre.titre} » (série : ${s.livre.serie}), page ${s.page + 1} sur ${s.total}. Ne rien révéler au-delà de cette page.`);
+  }
+  l.push(`Bibliothèque « ${document.title} » : ${texteCompte(livres, true)}.`);
+  const recents = livres.filter(x => x.progression && x.progression.page > 0)
+    .sort((a, b) => b.progression.maj - a.progression.maj).slice(0, 8);
+  if (recents.length) {
+    l.push('', 'Lectures les plus récentes :');
+    for (const x of recents) {
+      l.push(`- ${x.serie} / ${x.titre} : ${termine(x) ? 'terminé' : `page ${x.progression.page + 1}/${x.progression.total}`}`);
+    }
+  }
+  l.push('', 'Œuvres de la bibliothèque (chemin du dossier — nombre de tomes — état ; ♥ = favori) :');
+  for (const g of oeuvresPourIA()) {
+    l.push(`- ${g.nom} — ${g.livres.length} tome${g.livres.length > 1 ? 's' : ''} — ${etatOeuvre(g)}${g.favori ? ' ♥' : ''}`);
+  }
+  const texte = l.join('\n');
+  return texte.length > 29000 ? texte.slice(0, 29000) + '\n[liste tronquée]' : texte;
+}
+
+/* ----- Image de la page affichée (pour « Explique cette page ») ----- */
+async function imagePage(id, i){
+  const source = await (await fetch(await urlPage(id, i))).blob();
+  const bmp = await createImageBitmap(source);
+  const echelle = Math.min(1, 1400 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * echelle);
+  c.height = Math.round(bmp.height * echelle);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  bmp.close();
+  const jpeg = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+  const donnees = await new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(String(fr.result).split(',')[1]);
+    fr.onerror = rej;
+    fr.readAsDataURL(jpeg);
+  });
+  return {image: {mime: 'image/jpeg', donnees}, apercu: URL.createObjectURL(jpeg)};
+}
+
+/* ----- Affichage des réponses (mise en forme simple et sûre) ----- */
+function texteRiche(el, texte){
+  const enLigne = (parent, s) => {
+    for (const m of s.split(/(\*\*[^*]+\*\*)/g)) {
+      if (!m) continue;
+      if (/^\*\*[^*]+\*\*$/.test(m)) {
+        const b = document.createElement('strong');
+        b.textContent = m.slice(2, -2);
+        parent.append(b);
+      } else {
+        parent.append(document.createTextNode(m.replace(/(^|\s)\*(\S[^*]*?)\*(?=\s|$|[.,;:!?])/g, '$1$2')));
+      }
+    }
+  };
+  let liste = null, para = null;
+  for (const brute of String(texte).replace(/\r/g, '').split('\n')) {
+    const ligne = brute.trim();
+    if (!ligne) { liste = null; para = null; continue; }
+    const puce = ligne.match(/^(?:[-*•]|\d+[.)])\s+(.*)$/);
+    if (puce) {
+      if (!liste) { liste = document.createElement('ul'); el.append(liste); }
+      para = null;
+      const li = document.createElement('li');
+      enLigne(li, puce[1]);
+      liste.append(li);
+      continue;
+    }
+    liste = null;
+    const titre = ligne.match(/^#{1,6}\s+(.*)$/);
+    if (titre) {
+      const p = document.createElement('p');
+      const b = document.createElement('strong');
+      b.textContent = titre[1];
+      p.append(b);
+      el.append(p);
+      para = null;
+      continue;
+    }
+    if (!para) { para = document.createElement('p'); el.append(para); }
+    else para.append(document.createElement('br'));
+    enLigne(para, ligne);
+  }
+}
+
+function dessinerFilIA(){
+  const fil = $('iaFil');
+  fil.replaceChildren();
+  const bulle = (classe, remplir) => {
+    const b = document.createElement('div');
+    b.className = 'bulle ' + classe;
+    remplir(b);
+    fil.append(b);
+    return b;
+  };
+  if (!IA.messages.length) {
+    bulle('ia', b => texteRiche(b, IA.sujet
+      ? `Bonjour ${profil ? profil.nom : ''} ! Je sais que vous lisez **${IA.sujet.livre.titre}**, page ${IA.sujet.page + 1}. Posez-moi une question : je ne dévoilerai rien de la suite.`
+      : `Bonjour ${profil ? profil.nom : ''} ! Je connais votre bibliothèque et vos lectures. Je peux vous proposer quoi lire, vous rappeler une histoire sans spoiler, ou répondre à vos questions sur une série.`));
+  }
+  for (const m of IA.messages) {
+    if (m.role === 'user') {
+      bulle('moi' + (m.echec ? ' echec' : ''), b => {
+        if (m.apercu) {
+          const img = document.createElement('img');
+          img.src = m.apercu;
+          img.alt = 'Page envoyée';
+          b.append(img);
+        }
+        b.append(document.createTextNode(m.texte));
+      });
+    } else if (m.role === 'model') {
+      bulle('ia', b => texteRiche(b, m.texte));
+    } else {
+      bulle('erreur', b => { b.textContent = m.texte; });
+    }
+  }
+  if (IA.enCours) bulle('ia attente', b => { b.textContent = "L'assistant réfléchit…"; });
+  $('iaSuggestions').hidden = IA.messages.some(m => m.role !== 'erreur');
+  $('iaEnvoyer').disabled = IA.enCours;
+  fil.scrollTop = fil.scrollHeight;
+}
+
+function dessinerSuggestionsIA(){
+  const zone = $('iaSuggestions');
+  zone.replaceChildren();
+  const idees = IA.sujet
+    ? [['Explique cette page', true], ["Résume l'histoire jusqu'ici, sans spoiler", false],
+       ['Qui sont les personnages principaux ?', false], ['Que lire après cette série ?', false]]
+    : [['Que lire ensuite ?', false], ['Un manga proche de mes favoris', false],
+       ['Où en suis-je dans mes lectures ?', false], ['Une lecture courte pour ce soir', false]];
+  for (const [texte, avecImage] of idees) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = (avecImage ? '🖼 ' : '') + texte;
+    b.addEventListener('click', () => envoyerIA(texte, avecImage));
+    zone.append(b);
+  }
+}
+
+function majInfoIA(){
+  const morceaux = [];
+  if (typeof IA.restants === 'number') morceaux.push(`${IA.restants} message${IA.restants > 1 ? 's' : ''} restant${IA.restants > 1 ? 's' : ''} aujourd'hui`);
+  morceaux.push("L'IA (Gemini) voit vos titres et votre progression, et peut se tromper.");
+  $('iaInfo').textContent = morceaux.join(' · ');
+}
+
+async function envoyerIA(texte, avecImage){
+  texte = String(texte || '').trim();
+  if (!texte || IA.enCours) return;
+  const message = {role: 'user', texte};
+  IA.messages.push(message);
+  IA.enCours = true;
+  $('iaTexte').value = '';
+  ajusterSaisieIA();
+  dessinerFilIA();
+  let image = null;
+  try {
+    if (avecImage && IA.sujet) {
+      const r = await imagePage(IA.sujet.livre.id, IA.sujet.page);
+      image = r.image;
+      message.apercu = r.apercu;
+      dessinerFilIA();
+    }
+    const aEnvoyer = IA.messages.filter(m => (m.role === 'user' && !m.echec) || m.role === 'model')
+      .map(m => ({role: m.role, texte: m.texte}));
+    const d = await appelRelais('/discuter', {messages: aEnvoyer, contexte: contexteLecture(), image});
+    IA.messages.push({role: 'model', texte: d.texte});
+  } catch (e) {
+    message.echec = true;
+    IA.messages.push({role: 'erreur', texte: e.message});
+  } finally {
+    IA.enCours = false;
+    dessinerFilIA();
+    majInfoIA();
+  }
+}
+
+function ouvrirIA(depuisLecture){
+  if (!iaActive()) return;
+  const sujet = depuisLecture && R.livre ? {livre: R.livre, page: R.index, total: R.total} : null;
+  const memeSujet = (IA.sujet && IA.sujet.livre.id) === (sujet && sujet.livre.id);
+  if (!memeSujet) IA.messages = [];   // nouveau livre ou retour à la bibliothèque : nouvelle conversation
+  IA.sujet = sujet;
+  $('iaSujet').textContent = sujet
+    ? `${sujet.livre.titre}, page ${sujet.page + 1}/${sujet.total}`
+    : `Profil : ${profil ? profil.nom : ''}`;
+  dessinerSuggestionsIA();
+  dessinerFilIA();
+  majInfoIA();
+  const panneau = $('panneauIA');
+  if (panneau.hidden) {
+    panneau.hidden = false;
+    document.body.style.overflow = 'hidden';
+    history.pushState(Object.assign({}, history.state, {ia: true}), '');
+  }
+  if (!ecranTactile) $('iaTexte').focus();
+  if (!IA.statutVerifie) {
+    IA.statutVerifie = true;
+    appelRelais('/statut').then(majInfoIA).catch(e => {
+      IA.statutVerifie = false;
+      IA.messages.push({role: 'erreur', texte: e.message});
+      dessinerFilIA();
+    });
+  }
+}
+
+function fermerIA(depuisHistorique){
+  const panneau = $('panneauIA');
+  if (panneau.hidden) return;
+  panneau.hidden = true;
+  if (!reader.classList.contains('open')) document.body.style.overflow = '';
+  if (!depuisHistorique && history.state && history.state.ia) {
+    fermetureEnCours = true;
+    history.back();
+  }
+}
+
+function ajusterSaisieIA(){
+  const t = $('iaTexte');
+  t.style.height = 'auto';
+  t.style.height = Math.min(t.scrollHeight, 120) + 'px';
+}
+
+$('iaForm').addEventListener('submit', e => { e.preventDefault(); envoyerIA($('iaTexte').value, false); });
+$('iaTexte').addEventListener('input', ajusterSaisieIA);
+$('iaTexte').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && !ecranTactile) { e.preventDefault(); envoyerIA($('iaTexte').value, false); }
+});
+$('iaNouvelle').addEventListener('click', () => { IA.messages = []; dessinerFilIA(); });
+$('iaFermer').addEventListener('click', () => fermerIA(false));
+$('btnIA').addEventListener('click', () => ouvrirIA(false));
+$('btnIALecture').addEventListener('click', e => { e.stopPropagation(); ouvrirIA(true); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && !$('panneauIA').hidden) fermerIA(false); });
+$('btnIALecture').hidden = !iaActive();
 
 demarrer();   // connexion Google, puis bibliothèque
 </script>
