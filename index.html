@@ -52,7 +52,7 @@ input[type=search],select{background:var(--ink-2);border:1px solid var(--ink-3);
 input[type=search]{width:220px}
 main{padding:22px clamp(14px,3vw,36px) 60px}
 
-h2.rayon{font-family:var(--display);font-size:22px;margin:36px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--ink-3)}
+h2.rayon{font-family:var(--display);font-size:22px;margin:var(--esp-rayon,36px) 0 14px;padding-bottom:6px;border-bottom:1px solid var(--ink-3)}
 h2.rayon:first-child{margin-top:0}
 h2.rayon.reprendre{color:var(--yellow);border-bottom-color:var(--yellow)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:28px 22px}
@@ -223,6 +223,68 @@ footer.version{padding:10px 20px 28px}
 }
 #bandeauMaj .btn{background:var(--ink);color:var(--paper)}
 
+/* Favoris */
+:root{--coeur:#ff5a6e}
+.carte-wrap{position:relative;min-width:0;max-width:100%}
+.coeur{
+  position:absolute;top:6px;left:6px;z-index:3;width:32px;height:32px;padding:0;
+  display:grid;place-items:center;border:0;border-radius:50%;
+  background:rgba(26,34,51,.72);color:var(--paper);cursor:pointer;
+}
+.coeur svg{width:18px;height:18px;display:block}
+.coeur path{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round}
+.coeur:hover{background:rgba(26,34,51,.95)}
+.coeur.actif{color:var(--coeur);background:rgba(26,34,51,.9)}
+.coeur.actif path{fill:currentColor}
+.coeur.pulse svg{animation:pulse .3s ease-out}
+@keyframes pulse{50%{transform:scale(1.35)}}
+.ligne-coeur{display:flex;align-items:stretch;border-bottom:1px solid var(--ink-3);min-width:0}
+.ligne-coeur > .ligne,.ligne-coeur > .dossier{flex:1;min-width:0;border-bottom:0}
+.ligne-coeur .coeur{position:static;flex:none;width:46px;height:auto;border-radius:0;background:none;color:var(--muted)}
+.ligne-coeur .coeur:hover{background:var(--ink-2)}
+.ligne-coeur .coeur.actif{color:var(--coeur);background:none}
+h2.rayon.favoris{color:var(--coeur);border-bottom-color:var(--coeur)}
+#zoneFavoris h2.rayon{margin-top:var(--esp-rayon,36px)}
+#etageres > #zoneFavoris:first-child h2.rayon{margin-top:0}
+.dossier.simple{grid-template-columns:1fr auto}
+.dossier.simple .s{grid-column:1}
+.dossier.simple .st{grid-column:2}
+@media (prefers-reduced-motion:reduce){.coeur.pulse svg{animation:none}}
+
+/* Rangées repliables */
+h2.rayon{display:flex;align-items:baseline;gap:10px}
+h2.rayon .plier{
+  display:inline-flex;align-items:baseline;gap:9px;min-width:0;padding:2px 0;
+  background:none;border:0;font:inherit;color:inherit;cursor:pointer;text-align:left;
+}
+h2.rayon .plier .chev{
+  display:inline-block;font-size:.55em;opacity:.8;transform:rotate(90deg);transition:transform .15s;align-self:center;
+}
+h2.rayon.replie .plier .chev{transform:none}
+h2.rayon .plier .nb{margin-left:0}
+h2.rayon.replie{margin-bottom:0;border-bottom-style:dashed}
+@media (hover:hover){h2.rayon .plier:hover .titre{text-decoration:underline;text-underline-offset:4px}}
+@media (prefers-reduced-motion:reduce){h2.rayon .plier .chev{transition:none}}
+
+/* Raccourcis flottants sous l'en-tête */
+.raccourcis{
+  position:absolute;left:0;right:0;top:calc(100% + 3px);
+  display:flex;gap:8px;padding:8px clamp(14px,3vw,36px);
+  pointer-events:none;   /* seules les pastilles captent les appuis */
+}
+.raccourci{
+  pointer-events:auto;flex:none;display:inline-flex;align-items:center;gap:6px;
+  padding:6px 13px;border-radius:17px;border:1px solid currentColor;
+  background:rgba(35,45,66,.97);box-shadow:0 4px 12px rgba(0,0,0,.55);
+  font-size:13px;font-weight:600;cursor:pointer;
+}
+/* dans un dossier ou pendant une recherche, les pastilles restent affichées : on leur réserve la place */
+body.raccourcis-fixes main{padding-top:calc(22px + 42px)}
+.raccourci.reprendre{color:var(--yellow)}
+.raccourci.favoris{color:var(--coeur)}
+.raccourci .nb{color:var(--paper);font-weight:400;opacity:.8}
+.raccourci:hover{background:var(--ink-3)}
+
 .etat{max-width:520px;margin:12vh auto;text-align:center}
 .etat h2{font-family:var(--display);font-size:32px;margin:0 0 8px}
 .etat p{color:var(--muted);margin:0 0 20px}
@@ -287,11 +349,20 @@ dialog form{text-align:right;margin-top:8px}
 #stage.fit-width .zone,#stage.fit-original .zone{position:fixed;top:70px;bottom:70px}
 
 @media (max-width:640px){
+  :root{--esp-rayon:24px}
+  body.raccourcis-fixes main{padding-top:calc(14px + 42px)}
+  header{padding:8px 14px;padding-top:max(8px,env(safe-area-inset-top));gap:8px 12px}
+  header .btn{padding:6px 10px}
+  input[type=search]{padding:6px 10px}
+  main{padding:14px 14px 40px}
+  h2.rayon{font-size:18px;margin-bottom:10px;padding-bottom:4px}
+  h2.rayon .nb{font-size:12px}
+  .rayon .vider{padding:3px 9px;font-size:12px}
   .tuile{width:104px}
   .avatar{width:88px;height:88px;font-size:46px;border-radius:18px}
   .profil-btn{padding-right:4px}
   .profil-btn #nomActuel{display:none}
-  h1{font-size:26px}
+  h1{font-size:22px}
   .tools{width:100%}
   input[type=search]{flex:1 1 100%;width:auto;min-width:0}
   .bascule{flex:1}
@@ -321,6 +392,14 @@ dialog form{text-align:right;margin-top:8px}
     <button class="btn" id="btnActualiser">Actualiser</button>
 
   </div>
+  <nav class="raccourcis" id="raccourcis" aria-label="Raccourcis" hidden>
+    <button class="raccourci reprendre" data-cible="reprendre" hidden>
+      <span aria-hidden="true">▲</span> Reprendre <span class="nb"></span>
+    </button>
+    <button class="raccourci favoris" data-cible="favoris" hidden>
+      <span aria-hidden="true">♥</span> Favoris <span class="nb"></span>
+    </button>
+  </nav>
 </header>
 
 <main id="etageres">
@@ -418,6 +497,45 @@ const appareil = matchMedia('(pointer: coarse)').matches ? 'mobile' : 'ordinateu
 
 let livres = [];
 let vue = 'grille';
+let sectionsRepliees = new Set();   // 'reprendre', 'favoris', 'tous'
+
+// Transforme le titre d'une rangée en bouton qui la replie ou la déplie
+function enTeteRepliable(h, id, elements){
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'plier';
+  const chev = document.createElement('span');
+  chev.className = 'chev';
+  chev.setAttribute('aria-hidden', 'true');
+  chev.textContent = '▶';
+  b.append(chev);
+  for (const n of [...h.childNodes]) {
+    if (n.nodeType === Node.TEXT_NODE) {
+      const t = document.createElement('span');
+      t.className = 'titre';
+      t.textContent = n.textContent;
+      n.remove();
+      b.append(t);
+    } else if (n.classList && n.classList.contains('nb')) {
+      b.append(n);
+    }
+  }
+  h.prepend(b);
+  const appliquer = () => {
+    const replie = sectionsRepliees.has(id);
+    h.classList.toggle('replie', replie);
+    b.setAttribute('aria-expanded', String(!replie));
+    b.title = replie ? 'Déplier' : 'Replier';
+    elements.forEach(e => { if (e) e.hidden = replie; });
+    h.querySelectorAll('.vider').forEach(v => { v.hidden = replie; });
+  };
+  b.addEventListener('click', () => {
+    if (sectionsRepliees.has(id)) sectionsRepliees.delete(id); else sectionsRepliees.add(id);
+    appliquer();
+    sauverPreferences();
+  });
+  appliquer();
+}
 const ouverts = new Set();   // dossiers dépliés dans la vue liste
 let dossierCourant = '';     // dossier affiché dans la vue couvertures
 let fermetureEnCours = false;
@@ -427,7 +545,7 @@ const R = {livre: null, total: 0, index: 0, step: 1, mode: 'single', fit: 'heigh
 /* ======================================================================
    VERSION : augmentée à chaque mise à jour du fichier
    ====================================================================== */
-const VERSION = {numero: 4, date: '2026-09-16'};
+const VERSION = {numero: 7, date: '2026-09-16'};
 
 function texteVersion(v){
   const [a, m, j] = v.date.split('-');
@@ -860,6 +978,7 @@ async function listerBibliotheque(){
     if (ancien && ancien.mtime !== l.mtime) { D.index.delete(id); D.couvertures.delete(id); }
   }
   D.livres = nouveaux;
+  D.idsDossiers = new Map([...dossiers].map(([id, chemin]) => [chemin, id]));
 }
 
 /* ---------- Profils et progression (fichier privé dans le Drive) ---------- */
@@ -891,6 +1010,10 @@ function fusionner(local, distant){
     }
     for (const [app, pr] of Object.entries(pd.preferences || {})) {
       if (!pl.preferences[app] || (pr.maj || 0) > (pl.preferences[app].maj || 0)) pl.preferences[app] = pr;
+    }
+    pl.favoris = pl.favoris || {};
+    for (const [cle, f] of Object.entries(pd.favoris || {})) {
+      if (!pl.favoris[cle] || (f.maj || 0) > (pl.favoris[cle].maj || 0)) pl.favoris[cle] = f;
     }
   }
   if (!local.racine) local.racine = distant.racine;
@@ -981,6 +1104,8 @@ async function routeur(url, o){
       nom: D.nomRacine, local: false,
       profil: p ? resume(pid) : null,
       preferences: p ? p.preferences : {},
+      dossiers: Object.fromEntries(D.idsDossiers || []),
+      favoris: p ? Object.fromEntries(Object.entries(p.favoris || {}).filter(([, f]) => f.actif).map(([cle, f]) => [cle, f.ajout || f.maj])) : {},
       livres: [...D.livres.values()].map(l => Object.assign({}, l, {
         progression: p && p.livres[l.id] ? Object.assign({}, p.livres[l.id]) : null,
       })),
@@ -1034,7 +1159,19 @@ async function routeur(url, o){
       fit: ['height', 'width', 'original'].includes(corps.fit) ? corps.fit : 'height',
       rtl: !!corps.rtl,
       vue: corps.vue === 'liste' ? 'liste' : 'grille',
+      replies: (Array.isArray(corps.replies) ? corps.replies : []).filter(x => ['reprendre', 'favoris', 'tous'].includes(x)),
       maj: maintenant(),
+    };
+    marquerModifie();
+    return {ok: true};
+  }
+  if (chemin === 'api/favori') {
+    if (!/^[ld]:[\w-]+$/.test(corps.cle || '')) throw new Error('Favori invalide.');
+    p.favoris = p.favoris || {};
+    const ancien = p.favoris[corps.cle];
+    p.favoris[corps.cle] = {
+      actif: !!corps.actif, maj: Date.now(),
+      ajout: corps.actif ? (Number(corps.ajout) || Date.now()) : (ancien && ancien.ajout) || 0,
     };
     marquerModifie();
     return {ok: true};
@@ -1195,11 +1332,18 @@ async function charger(actualiser){
     majProfil();
     livres = d.livres;
     calculerOeuvres();
+    favoris = new Map(Object.entries(d.favoris || {}));
+    idsDossiers = new Map(Object.entries(d.dossiers || {}));
+    cheminsDossiers = new Map([...idsDossiers].map(([c, id]) => [id, c]));
     $('titre').firstChild.textContent = d.nom;
     document.title = d.nom;
     if (!prefsChargees) {
       const p = (d.preferences || {})[appareil];
-      if (p) { R.mode = p.mode; R.fit = p.fit; R.rtl = p.rtl; vue = p.vue === 'liste' ? 'liste' : 'grille'; }
+      if (p) {
+        R.mode = p.mode; R.fit = p.fit; R.rtl = p.rtl;
+        vue = p.vue === 'liste' ? 'liste' : 'grille';
+        sectionsRepliees = new Set(p.replies || []);
+      }
       majBascule();
       prefsChargees = true;
     }
@@ -1295,12 +1439,15 @@ function rayon(titre, items, options = {}){
   h.className = 'rayon' + (options.reprendre ? ' reprendre' : '');
   h.textContent = titre;
   if (options.reprendre) {
+    const nb = document.createElement('span');
+    nb.className = 'nb';
+    nb.textContent = items.length;
     const vider = document.createElement('button');
     vider.className = 'btn vider';
     vider.textContent = 'Tout retirer';
     vider.title = 'Retirer tous ces livres de « Reprendre la lecture »';
     vider.onclick = () => masquerReprise(items);
-    h.append(vider);
+    h.append(nb, vider);
   } else {
     const nb = document.createElement('span');
     nb.className = 'nb';
@@ -1315,6 +1462,7 @@ function rayon(titre, items, options = {}){
     g.append(options.reprendre ? avecRetrait(el, l) : el);
   });
   frag.append(h, g);
+  if (options.reprendre) enTeteRepliable(h, 'reprendre', [g]);
   return frag;
 }
 
@@ -1343,6 +1491,137 @@ function texteCompte(liste, toujoursOeuvres){
   return (o > 1 || toujoursOeuvres) ? `${pluriel(o, 'œuvre')}, ${livresTxt}` : livresTxt;
 }
 
+/* ----- Favoris -----
+   On met en favori une œuvre : un dossier de série (clé « d:idDrive »)
+   ou un livre isolé (clé « l:idDrive »). */
+let favoris = new Map();          // clé -> date d'ajout
+let idsDossiers = new Map();      // chemin -> id Drive
+let cheminsDossiers = new Map();  // id Drive -> chemin
+const SVG_COEUR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 8 3.4 4.5 7 4.5c2.1 0 3.6 1.2 5 3 1.4-1.8 2.9-3 5-3 3.6 0 5.6 3.5 4.3 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/></svg>';
+
+const estSerie = d => d.dossiers.size === 0 && d.livres.length > 0;
+const estLivreIsole = l => dossiersAvecSous.has(l.dossier || '');
+const cleDossier = d => idsDossiers.has(d.chemin) ? 'd:' + idsDossiers.get(d.chemin) : null;
+const cleLivre = l => 'l:' + l.id;
+
+function majCoeur(b){
+  const actif = favoris.has(b.dataset.cle);
+  b.classList.toggle('actif', actif);
+  b.setAttribute('aria-pressed', String(actif));
+  b.title = actif ? 'Retirer des favoris' : 'Ajouter aux favoris';
+  b.setAttribute('aria-label', (actif ? 'Retirer des favoris : ' : 'Ajouter aux favoris : ') + b.dataset.nom);
+}
+function boutonCoeur(cle, nom){
+  const b = document.createElement('button');
+  b.className = 'coeur';
+  b.innerHTML = SVG_COEUR;
+  b.dataset.cle = cle;
+  b.dataset.nom = nom;
+  majCoeur(b);
+  b.addEventListener('click', e => { e.stopPropagation(); basculerFavori(cle, nom, !favoris.has(cle)); });
+  return b;
+}
+// Enveloppe une carte (vue couvertures) avec son cœur
+function avecCoeur(carteEl, cle, nom){
+  const w = document.createElement('div');
+  w.className = 'carte-wrap';
+  w.append(carteEl);
+  if (cle) w.append(boutonCoeur(cle, nom));
+  return w;
+}
+// Enveloppe une ligne (vue liste) avec son cœur au bout
+function ligneAvecCoeur(ligneEl, cle, nom){
+  if (!cle) return ligneEl;
+  const w = document.createElement('div');
+  w.className = 'ligne-coeur';
+  w.append(ligneEl, boutonCoeur(cle, nom));
+  return w;
+}
+
+async function basculerFavori(cle, nom, actif, dateAjout){
+  const avant = favoris.get(cle);
+  const ajout = dateAjout || Date.now();
+  if (actif) favoris.set(cle, ajout); else favoris.delete(cle);
+  document.querySelectorAll('.coeur').forEach(b => {
+    if (b.dataset.cle !== cle) return;
+    majCoeur(b);
+    if (actif) { b.classList.remove('pulse'); void b.offsetWidth; b.classList.add('pulse'); }
+  });
+  rafraichirFavoris();
+  try {
+    await api('api/favori', {method: 'POST', body: JSON.stringify({cle, actif, ajout})});
+  } catch (e) {
+    if (avant) favoris.set(cle, avant); else favoris.delete(cle);
+    document.querySelectorAll('.coeur').forEach(b => { if (b.dataset.cle === cle) majCoeur(b); });
+    rafraichirFavoris();
+    notifier('Impossible de modifier les favoris : ' + e.message);
+    return;
+  }
+  if (!actif) notifier(`« ${nom} » retiré des favoris.`, () => basculerFavori(cle, nom, true, avant));
+  else if (!$('toast').hidden && $('toastMsg').textContent.includes('retiré des favoris')) $('toast').hidden = true;
+}
+
+// Remplace seulement la rangée des favoris, sans faire sauter la page
+function rafraichirFavoris(){
+  const ancien = document.getElementById('zoneFavoris');
+  planifierRaccourcis();
+  if (!ancien) return;
+  const haut = ancien.getBoundingClientRect().top;
+  const h0 = ancien.offsetHeight;
+  const nouveau = zoneFavoris();
+  ancien.replaceWith(nouveau);
+  if (haut < 0) scrollBy(0, nouveau.offsetHeight - h0);
+}
+
+function zoneFavoris(){
+  const z = document.createElement('div');
+  z.id = 'zoneFavoris';
+  const arbre = construireArbre(livres);
+  const elements = [...favoris.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([cle]) => elementFavori(cle, arbre))
+    .filter(Boolean);
+  if (!elements.length) return z;
+  const h = document.createElement('h2');
+  h.className = 'rayon favoris';
+  h.textContent = 'Favoris';
+  const nb = document.createElement('span');
+  nb.className = 'nb';
+  nb.textContent = elements.length;
+  h.append(nb);
+  const g = document.createElement('div');
+  g.className = vue === 'liste' ? 'liste' : 'rangee';
+  g.append(...elements);
+  z.append(h, g);
+  enTeteRepliable(h, 'favoris', [g]);
+  return z;
+}
+
+function elementFavori(cle, arbre){
+  if (cle.startsWith('l:')) {
+    const l = livres.find(x => x.id === cle.slice(2));
+    if (!l) return null;
+    return vue === 'liste'
+      ? ligneAvecCoeur(ligne(l, true), cle, l.titre)
+      : avecCoeur(carte(l, true), cle, l.titre);
+  }
+  const chemin = cheminsDossiers.get(cle.slice(2));
+  const d = chemin !== undefined && chemin !== '' ? trouverNoeud(arbre, chemin) : null;
+  if (!d) return null;
+  if (vue !== 'liste') return avecCoeur(carteDossier(d), cle, d.nom);
+  // Vue liste : la ligne ouvre le dossier dans l'arborescence plus bas
+  const b = ligneDossier(d, 0, false, false, true);
+  b.addEventListener('click', () => {
+    const parts = d.chemin.split('/');
+    parts.forEach((_, i) => ouverts.add(parts.slice(0, i + 1).join('/')));
+    if (sectionsRepliees.delete('tous')) sauverPreferences();
+    afficher();
+    const cible = document.querySelector(`#etageres .liste .dossier:not(.simple)[data-chemin="${CSS.escape(d.chemin)}"]`);
+    cible?.scrollIntoView({block: 'start', behavior: 'smooth'});
+  });
+  return ligneAvecCoeur(b, cle, d.nom);
+}
+
 /* ----- Vue liste : arborescence des dossiers ----- */
 function construireArbre(liste){
   const racine = {nom: '', chemin: '', dossiers: new Map(), livres: []};
@@ -1362,15 +1641,20 @@ function tousLesLivres(n){
   return [...n.livres, ...[...n.dossiers.values()].flatMap(tousLesLivres)];
 }
 
-function ligneDossier(d, niveau, ouvert, forceOuvert){
+function ligneDossier(d, niveau, ouvert, forceOuvert, simple){
   const tous = tousLesLivres(d);
   const lus = tous.filter(termine).length;
   const commences = tous.filter(enCours).length;
   const b = document.createElement('button');
-  b.className = 'dossier';
+  b.className = 'dossier' + (simple ? ' simple' : '');
   b.style.setProperty('--niv', niveau);
-  b.setAttribute('aria-expanded', String(ouvert));
-  b.innerHTML = '<span class="chev" aria-hidden="true">▶</span><span class="n"></span><span class="st"></span><span class="s"></span>';
+  b.dataset.chemin = d.chemin;
+  if (simple) {
+    b.innerHTML = '<span class="n"></span><span class="st"></span><span class="s"></span>';
+  } else {
+    b.setAttribute('aria-expanded', String(ouvert));
+    b.innerHTML = '<span class="chev" aria-hidden="true">▶</span><span class="n"></span><span class="st"></span><span class="s"></span>';
+  }
   b.querySelector('.n').textContent = d.nom;
   b.querySelector('.s').textContent = texteCompte(tous);
   const st = b.querySelector('.st');
@@ -1383,18 +1667,20 @@ function ligneDossier(d, niveau, ouvert, forceOuvert){
     barre.style.width = Math.round(lus / tous.length * 100) + '%';
     b.append(barre);
   }
+  if (simple) return b;
   b.addEventListener('click', () => {
     if (forceOuvert) return;
+    const bloc = b.closest('.ligne-coeur') || b;   // la ligne peut être enveloppée avec son cœur
     const deplie = b.getAttribute('aria-expanded') === 'true';
     if (deplie) {
       ouverts.delete(d.chemin);
       // referme aussi les sous-dossiers
       for (const c of [...ouverts]) if (c.startsWith(d.chemin + '/')) ouverts.delete(c);
-      b.nextElementSibling?.classList.contains('sous') && b.nextElementSibling.remove();
+      bloc.nextElementSibling?.classList.contains('sous') && bloc.nextElementSibling.remove();
       b.setAttribute('aria-expanded', 'false');
     } else {
       ouverts.add(d.chemin);
-      b.after(contenuDossier(d, niveau + 1, false));
+      bloc.after(contenuDossier(d, niveau + 1, false));
       b.setAttribute('aria-expanded', 'true');
     }
   });
@@ -1407,13 +1693,14 @@ function contenuDossier(n, niveau, forceOuvert){
   const dossiers = [...n.dossiers.values()].sort((a, b) => collator.compare(a.nom, b.nom));
   for (const d of dossiers) {
     const ouvert = forceOuvert || ouverts.has(d.chemin);
-    bloc.append(ligneDossier(d, niveau, ouvert, forceOuvert));
+    const ligneD = ligneDossier(d, niveau, ouvert, forceOuvert);
+    bloc.append(estSerie(d) ? ligneAvecCoeur(ligneD, cleDossier(d), d.nom) : ligneD);
     if (ouvert) bloc.append(contenuDossier(d, niveau + 1, forceOuvert));
   }
   n.livres.sort((a, b) => collator.compare(a.titre, b.titre)).forEach(l => {
     const r = ligne(l, false);
     r.style.setProperty('--niv', niveau + (niveau ? 0.9 : 0));
-    bloc.append(r);
+    bloc.append(estLivreIsole(l) ? ligneAvecCoeur(r, cleLivre(l), l.titre) : r);
   });
   return bloc;
 }
@@ -1424,8 +1711,9 @@ function vueListe(zone, liste, recherche){
   h.textContent = recherche ? 'Résultats' : 'Tous les livres';
   zone.append(h);
   const arbre = construireArbre(liste);
+  let outils = null;
   if (!recherche && arbre.dossiers.size) {
-    const outils = document.createElement('div');
+    outils = document.createElement('div');
     outils.className = 'outils-liste';
     const tout = document.createElement('button');
     tout.className = 'btn'; tout.textContent = 'Tout déplier';
@@ -1441,7 +1729,15 @@ function vueListe(zone, liste, recherche){
     zone.append(outils);
   }
   // Pendant une recherche, tous les dossiers contenant un résultat sont dépliés
-  zone.append(contenuDossier(arbre, 0, !!recherche));
+  const arbo = contenuDossier(arbre, 0, !!recherche);
+  zone.append(arbo);
+  if (!recherche) {
+    const nb = document.createElement('span');
+    nb.className = 'nb';
+    nb.textContent = texteCompte(liste, true);
+    h.append(nb);
+    enTeteRepliable(h, 'tous', [outils, arbo]);
+  }
 }
 
 /* ----- Vue couvertures : navigation dans les dossiers ----- */
@@ -1570,11 +1866,12 @@ function vueCouvertures(zone, liste){
   g.className = 'grid';
   [...n.dossiers.values()]
     .sort((a, b) => collator.compare(a.nom, b.nom))
-    .forEach(d => g.append(carteDossier(d)));
+    .forEach(d => g.append(estSerie(d) ? avecCoeur(carteDossier(d), cleDossier(d), d.nom) : carteDossier(d)));
   [...n.livres]
     .sort((a, b) => collator.compare(a.titre, b.titre))
-    .forEach(l => g.append(carte(l, false)));
+    .forEach(l => g.append(estLivreIsole(l) ? avecCoeur(carte(l, false), cleLivre(l), l.titre) : carte(l, false)));
   zone.append(h, g);
+  if (!dossierCourant) enTeteRepliable(h, 'tous', [g]);
 }
 
 function avecRetrait(el, l){
@@ -1640,7 +1937,74 @@ document.querySelectorAll('.bascule .btn').forEach(b => b.addEventListener('clic
   afficher();
 }));
 
+/* ----- Raccourcis « Reprendre » / « Favoris » ----- */
+const livresEnReprise = () => livres.filter(l => enCours(l) && !l.progression.masque);
+function nbFavorisValides(){
+  let n = 0;
+  for (const cle of favoris.keys()) {
+    if (cle.startsWith('l:')) {
+      if (livres.some(l => l.id === cle.slice(2))) n++;
+    } else {
+      const c = cheminsDossiers.get(cle.slice(2));
+      if (c && livres.some(l => (l.dossier || '') === c || (l.dossier || '').startsWith(c + '/'))) n++;
+    }
+  }
+  return n;
+}
+
+function majRaccourcis(){
+  const nav = $('raccourcis');
+  if (!profil || !livres.length) { nav.hidden = true; document.body.classList.remove('raccourcis-fixes'); return; }
+  const basEnTete = document.querySelector('header').getBoundingClientRect().bottom;
+  const sectionsAffichees = !$('recherche').value.trim() && (vue === 'liste' || !dossierCourant);
+  const titreReprise = document.querySelector('#etageres > h2.rayon.reprendre');
+  const blocs = {
+    reprendre: [titreReprise, titreReprise && titreReprise.nextElementSibling],
+    favoris: [document.getElementById('zoneFavoris')],
+  };
+  const nombres = {reprendre: Math.min(livresEnReprise().length, 15), favoris: nbFavorisValides()};
+  let auMoinsUn = false;
+  for (const b of nav.querySelectorAll('.raccourci')) {
+    const id = b.dataset.cible;
+    const encoreVisible = sectionsAffichees && blocs[id].some(e =>
+      e && !e.hidden && e.offsetParent && e.getBoundingClientRect().bottom > basEnTete + 4);
+    const montrer = nombres[id] > 0 && !encoreVisible;
+    b.hidden = !montrer;
+    b.querySelector('.nb').textContent = nombres[id];
+    auMoinsUn = auMoinsUn || montrer;
+  }
+  nav.hidden = !auMoinsUn;
+  document.body.classList.toggle('raccourcis-fixes', auMoinsUn && !sectionsAffichees);
+}
+
+let rafRaccourcis = 0;
+function planifierRaccourcis(){
+  if (!rafRaccourcis) rafRaccourcis = requestAnimationFrame(() => { rafRaccourcis = 0; majRaccourcis(); });
+}
+addEventListener('scroll', planifierRaccourcis, {passive: true});
+addEventListener('resize', planifierRaccourcis);
+
+function allerSection(id){
+  let redessiner = false;
+  if ($('recherche').value) { $('recherche').value = ''; redessiner = true; }
+  if (sectionsRepliees.delete(id)) { sauverPreferences(); redessiner = true; }
+  if (vue !== 'liste' && dossierCourant) allerDossier('');   // revient à l'accueil (et redessine)
+  else if (redessiner) afficher();
+  const cible = id === 'favoris'
+    ? document.getElementById('zoneFavoris')
+    : document.querySelector('#etageres > h2.rayon.reprendre');
+  if (!cible) return;
+  const haut = cible.getBoundingClientRect().top + scrollY - document.querySelector('header').offsetHeight - 52;
+  scrollTo({top: Math.max(0, haut), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
+}
+document.querySelectorAll('.raccourci').forEach(b => b.addEventListener('click', () => allerSection(b.dataset.cible)));
+
 function afficher(){
+  afficherContenu();
+  majRaccourcis();
+}
+
+function afficherContenu(){
   const q = $('recherche').value.trim().toLowerCase();
   $('compte').textContent = livres.length ? ' ' + texteCompte(livres, true) : '';
   const zone = $('etageres');
@@ -1661,6 +2025,7 @@ function afficher(){
   if (!q && (vue === 'liste' || !dossierCourant)) {
     const reprise = livres.filter(l => enCours(l) && !l.progression.masque).sort((a, b) => b.progression.maj - a.progression.maj).slice(0, 15);
     if (reprise.length) zone.append(rayon('Reprendre la lecture', reprise, {reprendre: true}));
+    zone.append(zoneFavoris());
   }
   if (vue === 'liste') { vueListe(zone, liste, q); return; }
   if (!q) { vueCouvertures(zone, liste); return; }
@@ -1890,7 +2255,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) toutE
 function sauverPreferences(){
   api('api/preferences', {
     method: 'POST',
-    body: JSON.stringify({appareil, mode: R.mode, fit: R.fit, rtl: R.rtl, vue})
+    body: JSON.stringify({appareil, mode: R.mode, fit: R.fit, rtl: R.rtl, vue, replies: [...sectionsRepliees]})
   }).catch(() => {});
 }
 
