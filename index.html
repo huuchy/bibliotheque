@@ -403,6 +403,7 @@ body:has(#bandeauMaj:not([hidden])) .fab-chat{bottom:136px}
   font-family:var(--display);font-weight:700;font-size:14px;color:var(--ink);
 }
 .ligne-msg:not(.premiere) .avatar-msg{visibility:hidden}
+.avatar-msg.photo{background-size:cover;background-position:center;color:transparent}
 #chatFil .bulle{
   position:relative;display:flex;flex-direction:column;gap:1px;max-width:min(78%,420px);
   padding:7px 11px 5px;border-radius:12px;
@@ -742,7 +743,7 @@ const R = {livre: null, total: 0, index: 0, step: 1, mode: 'single', fit: 'heigh
 /* ======================================================================
    VERSION : augmentée à chaque mise à jour du fichier
    ====================================================================== */
-const VERSION = {numero: 17, date: '2026-09-17'};
+const VERSION = {numero: 18, date: '2026-09-17'};
 
 function texteVersion(v){
   const [a, m, j] = v.date.split('-');
@@ -1579,6 +1580,7 @@ async function charger(actualiser){
         CHAT.dispo = !!st.chat;
         CHAT.moderateur = !!st.moderateur;
         majBadgeChat();
+        publierProfilChat();
         planifierChat(0);
       }).catch(() => { IA.statutVerifie = false; });
     }
@@ -2443,6 +2445,7 @@ function avatar(p, petit){
 
 function majProfil(){
   $('btnProfil').hidden = !profil;
+  if (typeof publierProfilChat === 'function') publierProfilChat();
   $('btnIA').hidden = !(profil && iaActive());
   majBadgeChat();
   if (!profil) return;
@@ -3347,7 +3350,7 @@ $('btnIALecture').hidden = !iaActive();
 /* ================= Discussion générale ================= */
 const CHAT = {
   dispo: false, moderateur: false, messages: [], dernier: 0, vu: 0, horloge: 0,
-  nonLus: 0, minuterie: null, enCours: false, occupe: false,
+  nonLus: 0, minuterie: null, enCours: false, occupe: false, avatars: new Map(), signature: '',
 };
 // délai avant la prochaine vérification des nouveaux messages
 // Vérification des nouveaux messages : 3 s discussion ouverte, 10 s sinon,
@@ -3360,6 +3363,33 @@ function majBadgeChat(){
   badge.hidden = !CHAT.nonLus;
   $('btnChat').hidden = !(profil && CHAT.dispo);
   $('btnChatLecture').hidden = !(profil && CHAT.dispo);
+}
+
+// Envoie au relais le prénom, la couleur et une petite photo, pour que les
+// autres lecteurs voient la pastille : leur compte Google ne peut pas lire notre Drive
+async function publierProfilChat(){
+  if (!CHAT.dispo || !profil) return;
+  const signature = `${profil.nom}|${profil.couleur}|${profil.image || ''}`;
+  if (signature === CHAT.signature) return;
+  CHAT.signature = signature;
+  let image = '';
+  try {
+    if (profil.image) {
+      const source = await (await fetch(await urlImageProfil(profil.image))).blob();
+      const bmp = await createImageBitmap(source);
+      const cote = Math.min(bmp.width, bmp.height);
+      const c = document.createElement('canvas');
+      c.width = c.height = 64;
+      c.getContext('2d').drawImage(bmp, (bmp.width - cote) / 2, (bmp.height - cote) / 2, cote, cote, 0, 0, 64, 64);
+      bmp.close();
+      image = c.toDataURL('image/jpeg', 0.7);
+    }
+  } catch {}
+  try {
+    await appelRelais('/chat/moi', {nom: profil.nom, couleur: profil.couleur, image});
+  } catch {
+    CHAT.signature = '';   // on réessaiera
+  }
 }
 
 function planifierChat(retard){
@@ -3375,6 +3405,12 @@ async function rafraichirChat(){
     const d = await appelRelais(`/chat?apres=${CHAT.dernier}&depuis=${CHAT.horloge}`);
     CHAT.moderateur = !!d.moderateur;
     CHAT.horloge = d.horloge || CHAT.horloge;
+    let pastillesChangees = false;
+    for (const a of d.avatars || []) {
+      CHAT.avatars.set(a.id, a);
+      pastillesChangees = true;
+    }
+    if (pastillesChangees && !$('panneauChat').hidden) dessinerChat();
     if (d.retires && d.retires.length) {
       const partis = new Set(d.retires);
       const avant = CHAT.messages.length;
@@ -3462,8 +3498,14 @@ function dessinerChat(){
     if (!m.moi) {
       const av = document.createElement('span');
       av.className = 'avatar-msg';
-      av.style.background = m.couleur || 'var(--yellow)';
+      av.style.backgroundColor = m.couleur || 'var(--yellow)';
       av.textContent = initiale(m.nom);
+      const pastille = CHAT.avatars.get(m.auteur);
+      if (pastille && pastille.image) {
+        av.style.backgroundImage = `url("${pastille.image}")`;
+        av.classList.add('photo');
+        av.textContent = '';
+      }
       av.setAttribute('aria-hidden', 'true');
       ligne.append(av);
     }
