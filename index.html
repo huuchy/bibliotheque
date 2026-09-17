@@ -350,6 +350,19 @@ body:has(.fab-ia:not([hidden])) footer.version{padding-bottom:88px}
 #formProfil .indice{color:var(--muted);font-size:13px;margin:0}
 
 /* Résultats de recherche */
+.resultat{display:flex;gap:16px;align-items:flex-start;padding:18px 0;border-bottom:1px solid var(--ink-3)}
+.resultat-couv{width:130px;flex:none}
+.resultat-tomes{flex:1;min-width:0}
+.resultat-tomes .liste{border-top:0;max-width:none}
+.resultat-tomes .ligne{padding:9px 4px}
+.resultat-tomes .ligne:last-child{border-bottom:0}
+.tomes-info{margin:0 0 4px;font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+@media (max-width:640px){
+  .resultat{gap:12px;padding:14px 0}
+  .resultat-couv{width:98px}
+  .resultat-tomes .ligne .t{font-size:14px}
+}
+
 h3.rayon.oeuvre{
   display:flex;align-items:center;gap:10px;margin:26px 0 12px;padding-bottom:6px;
   font-family:var(--display);font-size:19px;font-weight:700;border-bottom:1px solid var(--ink-3);
@@ -660,7 +673,7 @@ const R = {livre: null, total: 0, index: 0, step: 1, mode: 'single', fit: 'heigh
 /* ======================================================================
    VERSION : augmentée à chaque mise à jour du fichier
    ====================================================================== */
-const VERSION = {numero: 12, date: '2026-09-17'};
+const VERSION = {numero: 13, date: '2026-09-17'};
 
 function texteVersion(v){
   const [a, m, j] = v.date.split('-');
@@ -2229,8 +2242,9 @@ function vueRecherche(zone, q){
   zone.append(h);
 
   const seuls = resultats.filter(r => r.groupe.isole);
+  const arbre = construireArbre(livres);
   for (const r of resultats.filter(x => !x.groupe.isole)) {
-    zone.append(blocResultat(r));
+    zone.append(blocResultat(r, arbre));
   }
   if (seuls.length) {
     const t = document.createElement('h3');
@@ -2252,45 +2266,58 @@ function vueRecherche(zone, q){
   }
 }
 
-function blocResultat(r){
-  const frag = document.createDocumentFragment();
+function ouvrirOeuvre(g){
+  $('recherche').value = '';
+  if (vue === 'liste') {
+    const parts = g.dossier.split('/');
+    parts.forEach((_, i) => ouverts.add(parts.slice(0, i + 1).join('/')));
+    sectionsRepliees.delete('tous');
+    afficher();
+    document.querySelector(`#etageres .liste .dossier:not(.simple)[data-chemin="${CSS.escape(g.dossier)}"]`)
+      ?.scrollIntoView({block: 'start'});
+  } else {
+    allerDossier(g.dossier);
+  }
+}
+
+// Un résultat : la pile de couvertures avec son cœur à gauche, les tomes à droite
+function blocResultat(r, arbre){
   const g = r.groupe;
-  const h = document.createElement('h3');
-  h.className = 'rayon oeuvre';
+  const bloc = document.createElement('div');
+  bloc.className = 'resultat';
 
-  const ouvrir = document.createElement('button');
-  ouvrir.className = 'titre-oeuvre';
-  ouvrir.type = 'button';
-  ouvrir.textContent = g.nom.replace(/\//g, ' / ');
-  ouvrir.title = 'Ouvrir ' + g.nom;
-  ouvrir.addEventListener('click', () => {
-    $('recherche').value = '';
-    if (vue === 'liste') {
-      const parts = g.dossier.split('/');
-      parts.forEach((_, i) => ouverts.add(parts.slice(0, i + 1).join('/')));
-      sectionsRepliees.delete('tous');
-      afficher();
-      document.querySelector(`#etageres .liste .dossier:not(.simple)[data-chemin="${CSS.escape(g.dossier)}"]`)
-        ?.scrollIntoView({block: 'start'});
-    } else {
-      allerDossier(g.dossier);
-    }
-  });
-  h.append(ouvrir);
+  const noeud = trouverNoeud(arbre, g.dossier);
+  const colonne = document.createElement('div');
+  colonne.className = 'resultat-couv';
+  if (noeud) {
+    const pile = avecCoeur(carteDossier(noeud), g.cleFavori, g.titre);
+    // le clic ouvre l'œuvre, même en vue liste (sauf sur le cœur)
+    pile.addEventListener('click', e => {
+      if (e.target.closest('.coeur')) return;
+      e.stopPropagation();
+      ouvrirOeuvre(g);
+    }, true);
+    colonne.append(pile);
+  }
+  bloc.append(colonne);
 
-  const info = document.createElement('span');
-  info.className = 'nb';
-  const montres = r.livres.length < g.livres.length ? `${r.livres.length} sur ${g.livres.length} tomes` : pluriel(g.livres.length, 'tome');
-  info.textContent = `${montres} — ${etatOeuvre(g)}`;
-  h.append(info);
-  if (g.cleFavori) h.append(boutonCoeur(g.cleFavori, g.titre));
-  frag.append(h);
-
-  const contenu = document.createElement('div');
-  contenu.className = vue === 'liste' ? 'liste' : 'grid';
-  for (const l of r.livres) contenu.append(vue === 'liste' ? ligne(l, false) : carte(l, false));
-  frag.append(contenu);
-  return frag;
+  const droite = document.createElement('div');
+  droite.className = 'resultat-tomes';
+  const details = [];
+  if (g.nom !== g.titre) details.push(g.nom.replace(/\//g, ' / '));
+  if (r.livres.length < g.livres.length) details.push(`${r.livres.length} sur ${g.livres.length} tomes`);
+  if (details.length) {
+    const info = document.createElement('p');
+    info.className = 'tomes-info';
+    info.textContent = details.join(' · ');
+    droite.append(info);
+  }
+  const liste = document.createElement('div');
+  liste.className = 'liste';
+  for (const l of r.livres) liste.append(ligne(l, false));
+  droite.append(liste);
+  bloc.append(droite);
+  return bloc;
 }
 
 /* ================= Profils ================= */
