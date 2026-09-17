@@ -295,13 +295,14 @@ body.raccourcis-fixes main{padding-top:calc(22px + 42px)}
 .fab-ia:hover{background:#ffd34d}
 body:has(#bandeauMaj:not([hidden])) .fab-ia{bottom:76px}
 body:has(.fab-ia:not([hidden])) footer.version{padding-bottom:88px}
-#panneauIA{
+#panneauIA,#panneauChat{
   position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;
   background-color:var(--ink);
   background-image:radial-gradient(rgba(255,255,255,.035) 1px,transparent 1.2px);background-size:7px 7px;
 }
 @media (min-width:760px){
-  #panneauIA{left:auto;width:430px;border-left:3px solid var(--yellow);box-shadow:-12px 0 30px rgba(0,0,0,.5)}
+  #panneauIA,#panneauChat{left:auto;width:430px;border-left:3px solid var(--yellow);box-shadow:-12px 0 30px rgba(0,0,0,.5)}
+  #panneauChat{border-left-color:var(--cyan)}
 }
 .ia-tete{
   display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;
@@ -380,6 +381,31 @@ h3.rayon.oeuvre .coeur.actif{background:none;color:var(--coeur)}
   h3.rayon.oeuvre .nb{flex-basis:100%;order:3;margin:0}
   h3.rayon.oeuvre .titre-oeuvre{margin-right:auto}
 }
+
+/* Discussion générale */
+.fab-chat{
+  position:fixed;right:16px;bottom:max(76px,calc(env(safe-area-inset-bottom) + 76px));z-index:15;
+  width:52px;height:52px;border:0;border-radius:50%;cursor:pointer;font-size:22px;
+  background:var(--cyan);color:var(--ink);box-shadow:0 8px 20px rgba(0,0,0,.5);
+}
+body:has(#bandeauMaj:not([hidden])) .fab-chat{bottom:136px}
+.badge-chat{
+  position:absolute;top:-4px;right:-4px;min-width:22px;height:22px;padding:0 5px;border-radius:11px;
+  display:grid;place-items:center;background:var(--coeur);color:#fff;font-size:12px;font-weight:700;
+}
+#panneauChat .ia-tete{border-bottom-color:var(--cyan)}
+#chatFil .bulle{position:relative;display:flex;flex-direction:column;gap:2px;padding-right:34px}
+#chatFil .bulle.autre{align-self:flex-start;background:var(--ink-2);border-bottom-left-radius:4px}
+#chatFil .bulle .auteur{font-size:12px;font-weight:700}
+#chatFil .bulle .contenu{white-space:pre-wrap;overflow-wrap:anywhere}
+#chatFil .bulle .heure{align-self:flex-end;font-size:11px;opacity:.65}
+#chatFil .bulle .effacer{
+  position:absolute;top:6px;right:6px;width:22px;height:22px;padding:0;border:0;border-radius:50%;
+  background:none;color:inherit;opacity:.45;cursor:pointer;font-size:12px;
+}
+#chatFil .bulle .effacer:hover{opacity:1;color:var(--coeur)}
+.chat-jour{align-self:center;margin:6px 0;font-size:12px;color:var(--muted);text-transform:capitalize}
+.chat-vide{color:var(--muted);text-align:center;margin:auto}
 
 .etat{max-width:520px;margin:12vh auto;text-align:center}
 .etat h2{font-family:var(--display);font-size:32px;margin:0 0 8px}
@@ -562,7 +588,23 @@ dialog form{text-align:right;margin-top:8px}
   <p class="version"></p>
 </section>
 
+<button id="btnChat" class="fab-chat" hidden aria-label="Ouvrir la discussion">
+  <span aria-hidden="true">💬</span><span class="badge-chat" id="badgeChat" hidden></span>
+</button>
 <button id="btnIA" class="fab-ia" hidden aria-label="Ouvrir l'assistant de lecture"><span aria-hidden="true">✦</span> IA</button>
+
+<section id="panneauChat" role="dialog" aria-modal="true" aria-labelledby="titreChat" hidden>
+  <div class="ia-tete">
+    <h2 id="titreChat">Discussion</h2>
+    <button class="btn" id="chatFermer" type="button" aria-label="Fermer la discussion">✕</button>
+  </div>
+  <div class="ia-fil" id="chatFil" aria-live="polite"></div>
+  <form class="ia-saisie" id="chatForm">
+    <textarea id="chatTexte" rows="1" maxlength="1000" placeholder="Votre message…" aria-label="Votre message"></textarea>
+    <button class="btn primary" id="chatEnvoyer">Envoyer</button>
+  </form>
+  <p class="ia-info" id="chatInfo"></p>
+</section>
 
 <section id="panneauIA" role="dialog" aria-modal="true" aria-labelledby="titreIA" hidden>
   <div class="ia-tete">
@@ -602,6 +644,7 @@ dialog form{text-align:right;margin-top:8px}
     </select>
     <button class="btn" id="btnRtl" title="Sens de lecture japonais (droite vers gauche)">Manga</button>
     <button class="btn" id="btnIALecture" title="Demander à l'assistant" hidden>✦ IA</button>
+    <button class="btn" id="btnChatLecture" title="Partager dans la discussion" hidden>💬</button>
     <button class="btn" id="btnFs" title="Plein écran (F)">Plein écran</button>
     <button class="btn" id="btnFermer" title="Fermer (Échap)">Fermer</button>
   </div>
@@ -673,7 +716,7 @@ const R = {livre: null, total: 0, index: 0, step: 1, mode: 'single', fit: 'heigh
 /* ======================================================================
    VERSION : augmentée à chaque mise à jour du fichier
    ====================================================================== */
-const VERSION = {numero: 13, date: '2026-09-17'};
+const VERSION = {numero: 14, date: '2026-09-17'};
 
 function texteVersion(v){
   const [a, m, j] = v.date.split('-');
@@ -1146,6 +1189,7 @@ function fusionner(local, distant){
     if ((pd.majNom || 0) > (pl.majNom || 0)) { pl.nom = pd.nom; pl.majNom = pd.majNom; }
     if ((pd.majCode || 0) > (pl.majCode || 0)) { pl.code = pd.code; pl.majCode = pd.majCode; }
     if ((pd.majImage || 0) > (pl.majImage || 0)) { pl.image = pd.image; pl.majImage = pd.majImage; }
+    if ((pd.chatVu && pd.chatVu.id || 0) > (pl.chatVu && pl.chatVu.id || 0)) pl.chatVu = pd.chatVu;
     for (const [id, e] of Object.entries(pd.livres || {})) {
       if (!pl.livres[id] || horodatage(e) > horodatage(pl.livres[id])) pl.livres[id] = e;
     }
@@ -1201,7 +1245,7 @@ function resume(pid){
   const entrees = Object.values(p.livres || {});
   return {
     id: pid, nom: p.nom, couleur: p.couleur,
-    image: p.image || '', verrouille: !!(p.code && p.code.empreinte),
+    image: p.image || '', verrouille: !!(p.code && p.code.empreinte), chatVu: (p.chatVu && p.chatVu.id) || 0,
     lus: entrees.filter(e => e.total && e.page >= e.total - 1).length,
     en_cours: entrees.filter(e => e.page > 0 && e.page < e.total - 1 && !e.masque).length,
   };
@@ -1322,6 +1366,11 @@ async function routeur(url, o){
       replies: (Array.isArray(corps.replies) ? corps.replies : []).filter(x => ['reprendre', 'favoris', 'tous'].includes(x)),
       maj: maintenant(),
     };
+    marquerModifie();
+    return {ok: true};
+  }
+  if (chemin === 'api/chat-vu') {
+    p.chatVu = {id: Number(corps.id) || 0, maj: maintenant()};
     marquerModifie();
     return {ok: true};
   }
@@ -1497,6 +1546,16 @@ async function charger(actualiser){
     cheminsDossiers = new Map([...idsDossiers].map(([c, id]) => [id, c]));
     $('titre').firstChild.textContent = d.nom;
     document.title = d.nom;
+    CHAT.vu = Math.max(CHAT.vu, d.profil.chatVu || 0);
+    if (iaActive() && !IA.statutVerifie) {
+      IA.statutVerifie = true;
+      appelRelais('/statut').then(st => {
+        CHAT.dispo = !!st.chat;
+        CHAT.moderateur = !!st.moderateur;
+        majBadgeChat();
+        planifierChat(0);
+      }).catch(() => { IA.statutVerifie = false; });
+    }
     if (!prefsChargees) {
       const p = (d.preferences || {})[appareil];
       if (p) {
@@ -2359,6 +2418,7 @@ function avatar(p, petit){
 function majProfil(){
   $('btnProfil').hidden = !profil;
   $('btnIA').hidden = !(profil && iaActive());
+  majBadgeChat();
   if (!profil) return;
   habillerAvatar($('avatarActuel'), profil);
   $('nomActuel').textContent = profil.nom;
@@ -2630,6 +2690,7 @@ async function choisirProfil(id){
 function apresChoix(p){
   $('toast').hidden = true;
   if (typeof IA !== 'undefined') { IA.messages = []; IA.sujet = null; }
+  if (typeof CHAT !== 'undefined') { CHAT.messages = []; CHAT.dernier = 0; CHAT.vu = 0; CHAT.nonLus = 0; }
   profil = p;
   majProfil();
   fermerProfils();
@@ -2755,6 +2816,7 @@ function fermer(depuisHistorique){
 // et remonte d'un dossier dans la vue couvertures
 addEventListener('popstate', () => {
   if (fermetureEnCours) { fermetureEnCours = false; return; }
+  if (!$('panneauChat').hidden) { fermerChat(true); return; }
   if (!$('panneauIA').hidden) { fermerIA(true); return; }
   if (reader.classList.contains('open')) { fermer(true); return; }
   const st = history.state || {};
@@ -2953,7 +3015,7 @@ stage.addEventListener('touchend', e => {
 }, {passive: true});
 
 addEventListener('keydown', e => {
-  if (!reader.classList.contains('open') || !$('panneauIA').hidden) return;
+  if (!reader.classList.contains('open') || !$('panneauIA').hidden || !$('panneauChat').hidden) return;
   if ((e.target.tagName === 'SELECT' || e.target.type === 'range') && e.key !== 'Escape') return;
   const defil = R.mode === 'scroll';
   switch (e.key) {
@@ -3255,6 +3317,210 @@ $('btnIA').addEventListener('click', () => ouvrirIA(false));
 $('btnIALecture').addEventListener('click', e => { e.stopPropagation(); ouvrirIA(true); });
 addEventListener('keydown', e => { if (e.key === 'Escape' && !$('panneauIA').hidden) fermerIA(false); });
 $('btnIALecture').hidden = !iaActive();
+
+/* ================= Discussion générale ================= */
+const CHAT = {
+  dispo: false, moderateur: false, messages: [], dernier: 0, vu: 0, horloge: 0,
+  nonLus: 0, minuterie: null, enCours: false,
+};
+
+function majBadgeChat(){
+  const badge = $('badgeChat');
+  badge.textContent = CHAT.nonLus > 99 ? '99+' : CHAT.nonLus;
+  badge.hidden = !CHAT.nonLus;
+  $('btnChat').hidden = !(profil && CHAT.dispo);
+  $('btnChatLecture').hidden = !(profil && CHAT.dispo);
+}
+
+function planifierChat(retard){
+  clearTimeout(CHAT.minuterie);
+  if (!CHAT.dispo || !profil || document.hidden) return;
+  CHAT.minuterie = setTimeout(rafraichirChat, retard);
+}
+
+async function rafraichirChat(){
+  if (!CHAT.dispo || !profil) return;
+  try {
+    const d = await appelRelais(`/chat?apres=${CHAT.dernier}&depuis=${CHAT.horloge}`);
+    CHAT.moderateur = !!d.moderateur;
+    CHAT.horloge = d.horloge || CHAT.horloge;
+    if (d.retires && d.retires.length) {
+      const partis = new Set(d.retires);
+      const avant = CHAT.messages.length;
+      CHAT.messages = CHAT.messages.filter(m => !partis.has(m.id));
+      if (CHAT.messages.length !== avant && !$('panneauChat').hidden) dessinerChat();
+    }
+    if (d.messages && d.messages.length) {
+      CHAT.messages = (CHAT.dernier ? CHAT.messages.concat(d.messages) : d.messages).slice(-300);
+      CHAT.dernier = Math.max(CHAT.dernier, d.dernier || CHAT.messages[CHAT.messages.length - 1].id);
+      if ($('panneauChat').hidden) {
+        CHAT.nonLus = CHAT.messages.filter(m => m.id > CHAT.vu && !m.moi).length;
+        majBadgeChat();
+      } else {
+        dessinerChat();
+        marquerChatLu();
+      }
+    } else if (d.dernier) {
+      CHAT.dernier = Math.max(CHAT.dernier, d.dernier);
+    }
+  } catch (e) {
+    if (!$('panneauChat').hidden) $('chatInfo').textContent = e.message;
+  }
+  planifierChat($('panneauChat').hidden ? 45000 : 5000);
+}
+
+function marquerChatLu(){
+  if (!CHAT.dernier || CHAT.vu >= CHAT.dernier) return;
+  CHAT.vu = CHAT.dernier;
+  CHAT.nonLus = 0;
+  majBadgeChat();
+  api('api/chat-vu', {method: 'POST', body: JSON.stringify({id: CHAT.vu})}).catch(() => {});
+}
+
+const heureCourte = t => new Date(t * 1000).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
+const jourCourt = t => new Date(t * 1000).toLocaleDateString('fr-FR', {weekday: 'long', day: 'numeric', month: 'long'});
+
+function dessinerChat(){
+  const fil = $('chatFil');
+  const enBas = fil.scrollHeight - fil.scrollTop - fil.clientHeight < 60;
+  fil.replaceChildren();
+  if (!CHAT.messages.length) {
+    const vide = document.createElement('p');
+    vide.className = 'chat-vide';
+    vide.textContent = 'Aucun message pour le moment. Lancez la discussion !';
+    fil.append(vide);
+  }
+  let jour = '';
+  for (const m of CHAT.messages) {
+    const j = jourCourt(m.temps);
+    if (j !== jour) {
+      jour = j;
+      const sep = document.createElement('p');
+      sep.className = 'chat-jour';
+      sep.textContent = j;
+      fil.append(sep);
+    }
+    const b = document.createElement('div');
+    b.className = 'bulle ' + (m.moi ? 'moi' : 'autre');
+    if (!m.moi) {
+      const a = document.createElement('span');
+      a.className = 'auteur';
+      a.textContent = m.nom;
+      a.style.color = m.couleur || 'var(--yellow)';
+      b.append(a);
+    }
+    const t = document.createElement('span');
+    t.className = 'contenu';
+    t.textContent = m.texte;
+    b.append(t);
+    const h = document.createElement('span');
+    h.className = 'heure';
+    h.textContent = heureCourte(m.temps);
+    b.append(h);
+    if (m.effacable || CHAT.moderateur) {
+      const x = document.createElement('button');
+      x.className = 'effacer';
+      x.textContent = '✕';
+      x.title = 'Supprimer ce message';
+      x.setAttribute('aria-label', 'Supprimer le message de ' + m.nom);
+      x.addEventListener('click', () => supprimerMessageChat(m));
+      b.append(x);
+    }
+    fil.append(b);
+  }
+  if (enBas) fil.scrollTop = fil.scrollHeight;
+}
+
+async function supprimerMessageChat(m){
+  if (!confirm('Supprimer ce message pour tout le monde ?')) return;
+  try {
+    await appelRelais('/chat/supprimer', {id: m.id});
+    CHAT.messages = CHAT.messages.filter(x => x.id !== m.id);
+    dessinerChat();
+  } catch (e) {
+    $('chatInfo').textContent = e.message;
+  }
+}
+
+async function envoyerChat(texte){
+  texte = String(texte || '').trim();
+  if (!texte || CHAT.enCours) return;
+  CHAT.enCours = true;
+  $('chatEnvoyer').disabled = true;
+  try {
+    const d = await appelRelais('/chat', {texte, nom: profil.nom, couleur: profil.couleur});
+    CHAT.messages.push(d.message);
+    CHAT.dernier = Math.max(CHAT.dernier, d.message.id);
+    $('chatTexte').value = '';
+    ajusterSaisieChat();
+    dessinerChat();
+    $('chatFil').scrollTop = $('chatFil').scrollHeight;
+    marquerChatLu();
+    $('chatInfo').textContent = infoChat();
+  } catch (e) {
+    $('chatInfo').textContent = e.message;
+  } finally {
+    CHAT.enCours = false;
+    $('chatEnvoyer').disabled = false;
+  }
+}
+
+const infoChat = () => CHAT.moderateur
+  ? 'Visible par tous les lecteurs · vous pouvez supprimer les messages'
+  : 'Visible par tous les lecteurs de la bibliothèque';
+
+function ouvrirChat(prefixe){
+  if (!CHAT.dispo || !profil) return;
+  const panneau = $('panneauChat');
+  if (panneau.hidden) {
+    panneau.hidden = false;
+    document.body.style.overflow = 'hidden';
+    history.pushState(Object.assign({}, history.state, {chat: true}), '');
+  }
+  $('chatInfo').textContent = infoChat();
+  dessinerChat();
+  $('chatFil').scrollTop = $('chatFil').scrollHeight;
+  if (prefixe) {
+    $('chatTexte').value = prefixe;
+    ajusterSaisieChat();
+  }
+  if (!ecranTactile) $('chatTexte').focus();
+  marquerChatLu();
+  planifierChat(0);
+}
+
+function fermerChat(depuisHistorique){
+  const panneau = $('panneauChat');
+  if (panneau.hidden) return;
+  panneau.hidden = true;
+  if (!reader.classList.contains('open')) document.body.style.overflow = '';
+  if (!depuisHistorique && history.state && history.state.chat) {
+    fermetureEnCours = true;
+    history.back();
+  }
+  planifierChat(45000);
+}
+
+function ajusterSaisieChat(){
+  const t = $('chatTexte');
+  t.style.height = 'auto';
+  t.style.height = Math.min(t.scrollHeight, 120) + 'px';
+}
+
+$('chatForm').addEventListener('submit', e => { e.preventDefault(); envoyerChat($('chatTexte').value); });
+$('chatTexte').addEventListener('input', ajusterSaisieChat);
+$('chatTexte').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && !ecranTactile) { e.preventDefault(); envoyerChat($('chatTexte').value); }
+});
+$('btnChat').addEventListener('click', () => ouvrirChat());
+$('btnChatLecture').addEventListener('click', e => {
+  e.stopPropagation();
+  const l = R.livre;
+  ouvrirChat(l ? `Je lis « ${l.titre} » (${l.serie}), page ${R.index + 1}. ` : '');
+});
+$('chatFermer').addEventListener('click', () => fermerChat(false));
+addEventListener('keydown', e => { if (e.key === 'Escape' && !$('panneauChat').hidden) fermerChat(false); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) planifierChat(0); });
 
 demarrer();   // connexion Google, puis bibliothèque
 </script>
