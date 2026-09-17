@@ -394,17 +394,43 @@ body:has(#bandeauMaj:not([hidden])) .fab-chat{bottom:136px}
   display:grid;place-items:center;background:var(--coeur);color:#fff;font-size:12px;font-weight:700;
 }
 #panneauChat .ia-tete{border-bottom-color:var(--cyan)}
-#chatFil .bulle{position:relative;display:flex;flex-direction:column;gap:2px;padding-right:34px}
-#chatFil .bulle.autre{align-self:flex-start;background:var(--ink-2);border-bottom-left-radius:4px}
-#chatFil .bulle .auteur{font-size:12px;font-weight:700}
-#chatFil .bulle .contenu{white-space:pre-wrap;overflow-wrap:anywhere}
-#chatFil .bulle .heure{align-self:flex-end;font-size:11px;opacity:.65}
-#chatFil .bulle .effacer{
-  position:absolute;top:6px;right:6px;width:22px;height:22px;padding:0;border:0;border-radius:50%;
-  background:none;color:inherit;opacity:.45;cursor:pointer;font-size:12px;
+#chatFil{gap:3px;padding:12px 10px}
+.ligne-msg{display:flex;align-items:flex-end;gap:7px;max-width:100%}
+.ligne-msg.moi{justify-content:flex-end}
+.ligne-msg + .ligne-msg.premiere{margin-top:9px}
+.avatar-msg{
+  width:28px;height:28px;flex:none;border-radius:50%;display:grid;place-items:center;
+  font-family:var(--display);font-weight:700;font-size:14px;color:var(--ink);
 }
-#chatFil .bulle .effacer:hover{opacity:1;color:var(--coeur)}
-.chat-jour{align-self:center;margin:6px 0;font-size:12px;color:var(--muted);text-transform:capitalize}
+.ligne-msg:not(.premiere) .avatar-msg{visibility:hidden}
+#chatFil .bulle{
+  position:relative;display:flex;flex-direction:column;gap:1px;max-width:min(78%,420px);
+  padding:7px 11px 5px;border-radius:12px;
+}
+#chatFil .bulle.autre{align-self:flex-start;background:var(--ink-2);border-top-left-radius:12px}
+#chatFil .bulle.moi{align-self:flex-end;background:var(--cyan);color:var(--ink)}
+#chatFil .bulle.autre.premiere{border-top-left-radius:3px}
+#chatFil .bulle.moi.premiere{border-top-right-radius:3px}
+/* petite pointe, comme dans une messagerie */
+#chatFil .bulle.premiere::before{content:'';position:absolute;top:0;border:7px solid transparent}
+#chatFil .bulle.autre.premiere::before{left:-9px;border-top-color:var(--ink-2);border-right-color:var(--ink-2)}
+#chatFil .bulle.moi.premiere::before{right:-9px;border-top-color:var(--cyan);border-left-color:var(--cyan)}
+#chatFil .bulle .auteur{font-size:12.5px;font-weight:700;margin-bottom:1px}
+#chatFil .bulle .contenu{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.35}
+#chatFil .bulle .contenu a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+#chatFil .bulle.autre .contenu a{color:var(--cyan)}
+#chatFil .pied-msg{align-self:flex-end;display:flex;align-items:center;gap:3px;font-size:10.5px;opacity:.6;margin-top:1px}
+#chatFil .coche{font-size:11px}
+#chatFil .effacer{
+  flex:none;align-self:center;width:26px;height:26px;padding:0;border:0;border-radius:50%;
+  background:none;color:var(--muted);opacity:.35;cursor:pointer;font-size:12px;
+}
+#chatFil .ligne-msg:hover .effacer{opacity:.75}
+#chatFil .effacer:hover{opacity:1;color:var(--coeur);background:var(--ink-2)}
+.chat-jour{
+  align-self:center;margin:10px 0 6px;padding:3px 12px;border-radius:12px;
+  background:var(--ink-2);font-size:12px;color:var(--muted);text-transform:capitalize;
+}
 .chat-vide{color:var(--muted);text-align:center;margin:auto}
 
 .etat{max-width:520px;margin:12vh auto;text-align:center}
@@ -716,7 +742,7 @@ const R = {livre: null, total: 0, index: 0, step: 1, mode: 'single', fit: 'heigh
 /* ======================================================================
    VERSION : augmentée à chaque mise à jour du fichier
    ====================================================================== */
-const VERSION = {numero: 16, date: '2026-09-17'};
+const VERSION = {numero: 17, date: '2026-09-17'};
 
 function texteVersion(v){
   const [a, m, j] = v.date.split('-');
@@ -3384,6 +3410,24 @@ function marquerChatLu(){
   api('api/chat-vu', {method: 'POST', body: JSON.stringify({id: CHAT.vu})}).catch(() => {});
 }
 
+// Rend les adresses web cliquables, sans jamais interpréter de HTML
+function texteAvecLiens(el, texte){
+  const morceaux = String(texte).split(/(https?:\/\/[^\s]+)/g);
+  for (const m of morceaux) {
+    if (!m) continue;
+    if (/^https?:\/\//.test(m)) {
+      const a = document.createElement('a');
+      a.href = m;
+      a.textContent = m;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      el.append(a);
+    } else {
+      el.append(document.createTextNode(m));
+    }
+  }
+}
+
 const heureCourte = t => new Date(t * 1000).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
 const jourCourt = t => new Date(t * 1000).toLocaleDateString('fr-FR', {weekday: 'long', day: 'numeric', month: 'long'});
 
@@ -3398,18 +3442,35 @@ function dessinerChat(){
     fil.append(vide);
   }
   let jour = '';
+  let precedent = null;
   for (const m of CHAT.messages) {
     const j = jourCourt(m.temps);
     if (j !== jour) {
       jour = j;
+      precedent = null;
       const sep = document.createElement('p');
       sep.className = 'chat-jour';
       sep.textContent = j;
       fil.append(sep);
     }
-    const b = document.createElement('div');
-    b.className = 'bulle ' + (m.moi ? 'moi' : 'autre');
+    // messages qui se suivent du même auteur à moins de 5 minutes : on les regroupe
+    const premier = !precedent || precedent.nom !== m.nom || precedent.moi !== m.moi || m.temps - precedent.temps > 300;
+    precedent = m;
+
+    const ligne = document.createElement('div');
+    ligne.className = 'ligne-msg ' + (m.moi ? 'moi' : 'autre') + (premier ? ' premiere' : '');
     if (!m.moi) {
+      const av = document.createElement('span');
+      av.className = 'avatar-msg';
+      av.style.background = m.couleur || 'var(--yellow)';
+      av.textContent = initiale(m.nom);
+      av.setAttribute('aria-hidden', 'true');
+      ligne.append(av);
+    }
+
+    const b = document.createElement('div');
+    b.className = 'bulle ' + (m.moi ? 'moi' : 'autre') + (premier ? ' premiere' : '');
+    if (!m.moi && premier) {
       const a = document.createElement('span');
       a.className = 'auteur';
       a.textContent = m.nom;
@@ -3418,12 +3479,22 @@ function dessinerChat(){
     }
     const t = document.createElement('span');
     t.className = 'contenu';
-    t.textContent = m.texte;
+    texteAvecLiens(t, m.texte);
     b.append(t);
-    const h = document.createElement('span');
-    h.className = 'heure';
-    h.textContent = heureCourte(m.temps);
-    b.append(h);
+
+    const pied = document.createElement('span');
+    pied.className = 'pied-msg';
+    pied.textContent = heureCourte(m.temps);
+    if (m.moi) {
+      const coche = document.createElement('span');
+      coche.className = 'coche';
+      coche.textContent = '✓';
+      coche.title = 'Envoyé';
+      pied.append(coche);
+    }
+    b.append(pied);
+
+    ligne.append(b);
     if (m.effacable || CHAT.moderateur) {
       const x = document.createElement('button');
       x.className = 'effacer';
@@ -3431,9 +3502,10 @@ function dessinerChat(){
       x.title = 'Supprimer ce message';
       x.setAttribute('aria-label', 'Supprimer le message de ' + m.nom);
       x.addEventListener('click', () => supprimerMessageChat(m));
-      b.append(x);
+      // à côté de la bulle, jamais par-dessus le texte
+      if (m.moi) ligne.prepend(x); else ligne.append(x);
     }
-    fil.append(b);
+    fil.append(ligne);
   }
   if (enBas) fil.scrollTop = fil.scrollHeight;
 }
