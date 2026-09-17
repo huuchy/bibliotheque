@@ -339,6 +339,35 @@ body:has(.fab-ia:not([hidden])) footer.version{padding-bottom:88px}
 .ia-info{margin:0;padding:0 14px max(8px,env(safe-area-inset-bottom));background:var(--ink);font-size:12px;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.bulle.attente{animation:none}}
 
+/* Photo et code des profils */
+.avatar.photo{background-size:cover !important;background-position:center !important;background-repeat:no-repeat;color:transparent}
+.tuile{position:relative}
+.cadenas{
+  position:absolute;top:2px;right:6px;width:26px;height:26px;display:grid;place-items:center;
+  border-radius:50%;background:var(--ink-2);border:2px solid var(--ink);font-size:13px;
+}
+#formProfil .champ-code{display:flex;flex-direction:column;gap:6px}
+#formProfil .indice{color:var(--muted);font-size:13px;margin:0}
+
+/* Résultats de recherche */
+h3.rayon.oeuvre{
+  display:flex;align-items:center;gap:10px;margin:26px 0 12px;padding-bottom:6px;
+  font-family:var(--display);font-size:19px;font-weight:700;border-bottom:1px solid var(--ink-3);
+}
+.titre-oeuvre{
+  background:none;border:0;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer;
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+@media (hover:hover){button.titre-oeuvre:hover{text-decoration:underline;text-underline-offset:4px}}
+h3.rayon.oeuvre .nb{font-family:var(--ui);font-size:13px;font-weight:400;color:var(--muted);margin-left:0;margin-right:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+h3.rayon.oeuvre .coeur{position:static;flex:none;width:32px;height:32px;background:none;color:var(--muted)}
+h3.rayon.oeuvre .coeur.actif{background:none;color:var(--coeur)}
+@media (max-width:640px){
+  h3.rayon.oeuvre{font-size:17px;margin:20px 0 10px;flex-wrap:wrap}
+  h3.rayon.oeuvre .nb{flex-basis:100%;order:3;margin:0}
+  h3.rayon.oeuvre .titre-oeuvre{margin-right:auto}
+}
+
 .etat{max-width:520px;margin:12vh auto;text-align:center}
 .etat h2{font-family:var(--display);font-size:32px;margin:0 0 8px}
 .etat p{color:var(--muted);margin:0 0 20px}
@@ -491,14 +520,27 @@ dialog form{text-align:right;margin-top:8px}
   <div class="tuiles" id="tuiles"></div>
   <form id="formProfil" hidden>
     <label for="nomProfil" id="labelProfil">Prénom</label>
-    <input id="nomProfil" maxlength="24" autocomplete="off" autocapitalize="words" required>
+    <input id="nomProfil" maxlength="24" autocomplete="off" autocapitalize="words">
+    <div class="champ-code" id="champActuel" hidden>
+      <label for="codeActuel" id="labelActuel">Code actuel</label>
+      <input id="codeActuel" type="password" inputmode="numeric" autocomplete="off" maxlength="32">
+    </div>
+    <div class="champ-code" id="champNouveau" hidden>
+      <label for="codeNouveau">Nouveau code (4 chiffres ou plus)</label>
+      <input id="codeNouveau" type="password" inputmode="numeric" autocomplete="new-password" maxlength="32">
+      <label for="codeConfirme">Confirmer le code</label>
+      <input id="codeConfirme" type="password" inputmode="numeric" autocomplete="new-password" maxlength="32">
+      <p class="indice">Laissez les deux champs vides pour retirer le code.</p>
+    </div>
     <p class="erreur" id="erreurProfil"></p>
     <div class="ligne-btn">
       <button type="button" class="btn" id="annulerProfil">Annuler</button>
       <button class="btn primary" id="validerProfil">Créer</button>
     </div>
   </form>
+  <input type="file" id="fichierProfil" accept="image/*" hidden>
   <div class="pied-profils">
+    <button class="btn" id="btnActualiserProfils">Actualiser</button>
     <button class="btn" id="btnGerer" hidden>Gérer les profils</button>
     <button class="btn" id="btnRetourBiblio" hidden>Retour à la bibliothèque</button>
     <button class="btn" id="btnDossierDrive">Changer de dossier Drive</button>
@@ -618,7 +660,7 @@ const R = {livre: null, total: 0, index: 0, step: 1, mode: 'single', fit: 'heigh
 /* ======================================================================
    VERSION : augmentée à chaque mise à jour du fichier
    ====================================================================== */
-const VERSION = {numero: 9, date: '2026-09-16'};
+const VERSION = {numero: 12, date: '2026-09-17'};
 
 function texteVersion(v){
   const [a, m, j] = v.date.split('-');
@@ -1089,6 +1131,8 @@ function fusionner(local, distant){
     const pl = local.profils[pid];
     if (!pl) { local.profils[pid] = pd; continue; }
     if ((pd.majNom || 0) > (pl.majNom || 0)) { pl.nom = pd.nom; pl.majNom = pd.majNom; }
+    if ((pd.majCode || 0) > (pl.majCode || 0)) { pl.code = pd.code; pl.majCode = pd.majCode; }
+    if ((pd.majImage || 0) > (pl.majImage || 0)) { pl.image = pd.image; pl.majImage = pd.majImage; }
     for (const [id, e] of Object.entries(pd.livres || {})) {
       if (!pl.livres[id] || horodatage(e) > horodatage(pl.livres[id])) pl.livres[id] = e;
     }
@@ -1144,6 +1188,7 @@ function resume(pid){
   const entrees = Object.values(p.livres || {});
   return {
     id: pid, nom: p.nom, couleur: p.couleur,
+    image: p.image || '', verrouille: !!(p.code && p.code.empreinte),
     lus: entrees.filter(e => e.total && e.page >= e.total - 1).length,
     en_cours: entrees.filter(e => e.page > 0 && e.page < e.total - 1 && !e.masque).length,
   };
@@ -1214,6 +1259,24 @@ async function routeur(url, o){
     profils[corps.id].majNom = maintenant();
     marquerModifie();
     return {ok: true};
+  }
+  if (chemin === 'api/profils/code') {
+    const cible = profils[corps.id];
+    if (!cible) throw new Error('Profil introuvable.');
+    if (corps.code) cible.code = {sel: String(corps.code.sel), empreinte: String(corps.code.empreinte)};
+    else delete cible.code;
+    cible.majCode = maintenant();
+    marquerModifie();
+    return {ok: true};
+  }
+  if (chemin === 'api/profils/image') {
+    const cible = profils[corps.id];
+    if (!cible) throw new Error('Profil introuvable.');
+    const ancienne = cible.image;
+    cible.image = corps.fichier ? String(corps.fichier) : '';
+    cible.majImage = maintenant();
+    marquerModifie();
+    return {ok: true, ancienne};
   }
   if (chemin === 'api/profils/supprimer') {
     delete profils[corps.id];
@@ -1573,6 +1636,32 @@ function texteCompte(liste, toujoursOeuvres){
   const o = nbOeuvres(liste);
   const livresTxt = pluriel(liste.length, 'livre');
   return (o > 1 || toujoursOeuvres) ? `${pluriel(o, 'œuvre')}, ${livresTxt}` : livresTxt;
+}
+
+/* ----- Regroupement par œuvre (série ou livre isolé) ----- */
+function groupesOeuvres(){
+  const groupes = new Map();
+  for (const l of livres) {
+    const d = l.dossier || '';
+    const isole = dossiersAvecSous.has(d);
+    const cle = isole ? 'l:' + l.id : 'd:' + d;
+    if (!groupes.has(cle)) {
+      groupes.set(cle, {
+        cle,
+        cleFavori: isole ? 'l:' + l.id : (idsDossiers.get(d) ? 'd:' + idsDossiers.get(d) : null),
+        isole,
+        dossier: d,
+        nom: isole ? (d ? d + '/' : '') + l.titre : d,
+        titre: isole ? l.titre : (d.split('/').pop() || d),
+        favori: isole ? favoris.has('l:' + l.id) : favoris.has('d:' + idsDossiers.get(d)),
+        livres: [],
+      });
+    }
+    groupes.get(cle).livres.push(l);
+  }
+  const tout = [...groupes.values()];
+  for (const g of tout) g.livres.sort((a, b) => collator.compare(a.titre, b.titre));
+  return tout.sort((a, b) => collator.compare(a.nom, b.nom));
 }
 
 /* ----- Favoris -----
@@ -2111,15 +2200,97 @@ function afficherContenu(){
     if (reprise.length) zone.append(rayon('Reprendre la lecture', reprise, {reprendre: true}));
     zone.append(zoneFavoris());
   }
-  if (vue === 'liste') { vueListe(zone, liste, q); return; }
-  if (!q) { vueCouvertures(zone, liste); return; }
-  // Recherche en vue couvertures : résultats regroupés par série
-  const series = new Map();
-  for (const l of liste) {
-    if (!series.has(l.serie)) series.set(l.serie, []);
-    series.get(l.serie).push(l);
+  if (q) { vueRecherche(zone, q); return; }
+  if (vue === 'liste') { vueListe(zone, liste, ''); return; }
+  vueCouvertures(zone, liste);
+}
+
+/* ----- Résultats de recherche : une œuvre, puis ses tomes ----- */
+function vueRecherche(zone, q){
+  const resultats = [];
+  for (const g of groupesOeuvres()) {
+    const nomTrouve = g.nom.toLowerCase().includes(q);
+    const tomes = g.livres.filter(l => l.titre.toLowerCase().includes(q));
+    if (nomTrouve || tomes.length) resultats.push({groupe: g, livres: nomTrouve ? g.livres : tomes});
   }
-  for (const [nom, items] of series) zone.append(rayon(nom, items));
+  if (!resultats.length) {
+    etat('', `Aucune œuvre ne correspond à « ${q} ».`);
+    return;
+  }
+
+  const total = resultats.reduce((n, r) => n + r.livres.length, 0);
+  const h = document.createElement('h2');
+  h.className = 'rayon';
+  h.textContent = 'Résultats';
+  const nb = document.createElement('span');
+  nb.className = 'nb';
+  nb.textContent = `${pluriel(resultats.length, 'œuvre')}, ${pluriel(total, 'livre')}`;
+  h.append(nb);
+  zone.append(h);
+
+  const seuls = resultats.filter(r => r.groupe.isole);
+  for (const r of resultats.filter(x => !x.groupe.isole)) {
+    zone.append(blocResultat(r));
+  }
+  if (seuls.length) {
+    const t = document.createElement('h3');
+    t.className = 'rayon oeuvre';
+    const titre = document.createElement('span');
+    titre.className = 'titre-oeuvre';
+    titre.textContent = 'Livres seuls';
+    t.append(titre);
+    zone.append(t);
+    const g = document.createElement('div');
+    g.className = vue === 'liste' ? 'liste' : 'grid';
+    for (const r of seuls) {
+      const l = r.livres[0];
+      g.append(vue === 'liste'
+        ? ligneAvecCoeur(ligne(l, true), cleLivre(l), l.titre)
+        : avecCoeur(carte(l, true), cleLivre(l), l.titre));
+    }
+    zone.append(g);
+  }
+}
+
+function blocResultat(r){
+  const frag = document.createDocumentFragment();
+  const g = r.groupe;
+  const h = document.createElement('h3');
+  h.className = 'rayon oeuvre';
+
+  const ouvrir = document.createElement('button');
+  ouvrir.className = 'titre-oeuvre';
+  ouvrir.type = 'button';
+  ouvrir.textContent = g.nom.replace(/\//g, ' / ');
+  ouvrir.title = 'Ouvrir ' + g.nom;
+  ouvrir.addEventListener('click', () => {
+    $('recherche').value = '';
+    if (vue === 'liste') {
+      const parts = g.dossier.split('/');
+      parts.forEach((_, i) => ouverts.add(parts.slice(0, i + 1).join('/')));
+      sectionsRepliees.delete('tous');
+      afficher();
+      document.querySelector(`#etageres .liste .dossier:not(.simple)[data-chemin="${CSS.escape(g.dossier)}"]`)
+        ?.scrollIntoView({block: 'start'});
+    } else {
+      allerDossier(g.dossier);
+    }
+  });
+  h.append(ouvrir);
+
+  const info = document.createElement('span');
+  info.className = 'nb';
+  const montres = r.livres.length < g.livres.length ? `${r.livres.length} sur ${g.livres.length} tomes` : pluriel(g.livres.length, 'tome');
+  info.textContent = `${montres} — ${etatOeuvre(g)}`;
+  h.append(info);
+  if (g.cleFavori) h.append(boutonCoeur(g.cleFavori, g.titre));
+  frag.append(h);
+
+  const contenu = document.createElement('div');
+  contenu.className = vue === 'liste' ? 'liste' : 'grid';
+  for (const l of r.livres) contenu.append(vue === 'liste' ? ligne(l, false) : carte(l, false));
+  frag.append(contenu);
+  return frag;
 }
 
 /* ================= Profils ================= */
@@ -2128,11 +2299,32 @@ let modeGestion = false;
 let formulaire = null;   // {type: 'creer'} ou {type: 'renommer', id}
 const initiale = nom => (nom.trim()[0] || '?').toLocaleUpperCase('fr');
 
+const imagesProfil = new Map();
+function urlImageProfil(fichier){
+  if (!imagesProfil.has(fichier)) {
+    const p = drive('files/' + fichier, {params: {alt: 'media'}, brut: true})
+      .then(r => r.blob()).then(b => URL.createObjectURL(b));
+    p.catch(() => imagesProfil.delete(fichier));
+    imagesProfil.set(fichier, p);
+  }
+  return imagesProfil.get(fichier);
+}
+function habillerAvatar(el, p){
+  el.style.backgroundColor = p.couleur;
+  el.style.backgroundImage = '';
+  el.classList.remove('photo');
+  el.textContent = initiale(p.nom);
+  if (p.image) {
+    urlImageProfil(p.image).then(u => {
+      el.style.backgroundImage = `url("${u}")`;
+      el.classList.add('photo');
+    }).catch(() => {});
+  }
+}
 function avatar(p, petit){
   const a = document.createElement('span');
   a.className = 'avatar' + (petit ? ' petit' : '');
-  a.style.background = p.couleur;
-  a.textContent = initiale(p.nom);
+  habillerAvatar(a, p);
   a.setAttribute('aria-hidden', 'true');
   return a;
 }
@@ -2141,14 +2333,72 @@ function majProfil(){
   $('btnProfil').hidden = !profil;
   $('btnIA').hidden = !(profil && iaActive());
   if (!profil) return;
-  const a = $('avatarActuel');
-  a.style.background = profil.couleur;
-  a.textContent = initiale(profil.nom);
+  habillerAvatar($('avatarActuel'), profil);
   $('nomActuel').textContent = profil.nom;
   $('btnProfil').setAttribute('aria-label', 'Profil : ' + profil.nom + '. Changer de profil');
 }
 
-async function ouvrirProfils(){
+/* ----- Code d'accès d'un profil ----- */
+const codeDe = pid => (D.donnees.profils[pid] || {}).code || null;
+const b64 = octets => btoa(String.fromCharCode(...new Uint8Array(octets)));
+const depuisB64 = t => Uint8Array.from(atob(t), c => c.charCodeAt(0));
+
+async function empreinteCode(code, sel){
+  const cle = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits(
+    {name: 'PBKDF2', salt: depuisB64(sel), iterations: 120000, hash: 'SHA-256'}, cle, 256);
+  return b64(bits);
+}
+async function codeCorrect(pid, code){
+  const c = codeDe(pid);
+  if (!c) return true;
+  try { return (await empreinteCode(code, c.sel)) === c.empreinte; } catch { return false; }
+}
+
+/* ----- Photo de profil ----- */
+async function vignetteProfil(fichier){
+  const bmp = await createImageBitmap(fichier);
+  const cote = Math.min(bmp.width, bmp.height);
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  c.getContext('2d').drawImage(bmp, (bmp.width - cote) / 2, (bmp.height - cote) / 2, cote, cote, 0, 0, 256, 256);
+  bmp.close();
+  return new Promise(r => c.toBlob(r, 'image/jpeg', 0.85));
+}
+
+async function changerImageProfil(pid, fichier){
+  try {
+    $('aideProfils').textContent = 'Envoi de la photo…';
+    const vignette = await vignetteProfil(fichier);
+    const envoi = await televerser(`profil-${pid}-${Date.now()}.jpg`, vignette, 'image/jpeg');
+    const d = await api('api/profils/image', {method: 'POST', body: JSON.stringify({id: pid, fichier: envoi.id})});
+    if (d.ancienne) {
+      imagesProfil.delete(d.ancienne);
+      drive('files/' + d.ancienne, {method: 'DELETE', brut: true}).catch(() => {});
+    }
+    if (profil && profil.id === pid) { profil.image = envoi.id; majProfil(); }
+    ouvrirProfils();
+  } catch (e) {
+    $('aideProfils').textContent = "Photo impossible : " + e.message;
+  }
+}
+
+async function retirerImageProfil(pid){
+  try {
+    const d = await api('api/profils/image', {method: 'POST', body: JSON.stringify({id: pid, fichier: ''})});
+    if (d.ancienne) {
+      imagesProfil.delete(d.ancienne);
+      drive('files/' + d.ancienne, {method: 'DELETE', brut: true}).catch(() => {});
+    }
+    if (profil && profil.id === pid) { profil.image = ''; majProfil(); }
+    ouvrirProfils();
+  } catch (e) {
+    $('aideProfils').textContent = e.message;
+  }
+}
+
+async function ouvrirProfils(options){
+  const sansSynchro = !!(options && options.sansSynchro === true);
   const ecran = $('ecranProfils');
   const dejaOuvert = !ecran.hidden;
   ecran.hidden = false;
@@ -2159,6 +2409,33 @@ async function ouvrirProfils(){
     dessinerProfils(d.profils);
   } catch (e) {
     $('aideProfils').textContent = e.message;
+  }
+  if (!sansSynchro) synchroniserProfils(true);
+}
+
+// Relit les profils enregistrés dans Drive : utile si un autre appareil en a
+// créé, renommé, protégé ou changé la photo
+async function synchroniserProfils(silencieux){
+  const btn = $('btnActualiserProfils');
+  if (!silencieux) { btn.disabled = true; btn.textContent = 'Actualisation…'; }
+  try {
+    await sauvegarder(false);   // on envoie d'abord nos propres changements
+    if (D.fichierDonnees) {
+      fusionner(D.donnees, normaliser(await drive('files/' + D.fichierDonnees, {params: {alt: 'media'}})));
+    } else {
+      await chargerDonnees();
+    }
+    imagesProfil.clear();
+    if (profil) {
+      if (!D.donnees.profils[profil.id]) { profil = null; majProfil(); }
+      else { profil = resume(profil.id); majProfil(); charger(false); }
+    }
+    if (!$('ecranProfils').hidden) await ouvrirProfils({sansSynchro: true});
+  } catch (e) {
+    if (!silencieux) $('aideProfils').textContent = e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Actualiser';
   }
 }
 
@@ -2174,7 +2451,8 @@ function dessinerProfils(liste){
   $('titreProfils').textContent = modeGestion ? 'Gérer les profils' : 'Qui lit ?';
   $('aideProfils').textContent = !liste.length
     ? 'Créez un profil pour chaque lecteur : chacun garde sa propre progression.'
-    : modeGestion ? 'Renommez ou supprimez un profil.' : 'Choisissez votre profil sur cet appareil.';
+    : modeGestion ? 'Renommez un profil, changez sa photo, protégez-le par un code ou supprimez-le.'
+    : 'Choisissez votre profil sur cet appareil.';
 
   for (const p of liste) {
     const t = document.createElement(modeGestion ? 'div' : 'button');
@@ -2185,19 +2463,36 @@ function dessinerProfils(liste){
     info.className = 'info';
     info.textContent = p.en_cours ? `${p.en_cours} en cours` : p.lus ? `${p.lus} lu${p.lus > 1 ? 's' : ''}` : 'Nouveau';
     t.append(avatar(p), nom, info);
+    if (p.verrouille) {
+      const cadenas = document.createElement('span');
+      cadenas.className = 'cadenas';
+      cadenas.textContent = '🔒';
+      cadenas.title = 'Profil protégé par un code';
+      t.append(cadenas);
+    }
     if (modeGestion) {
       const actions = document.createElement('div');
       actions.className = 'actions-tuile';
-      const ren = document.createElement('button');
-      ren.className = 'btn'; ren.textContent = 'Renommer';
-      ren.onclick = () => ouvrirFormulaire({type: 'renommer', id: p.id, nom: p.nom});
-      const sup = document.createElement('button');
-      sup.className = 'btn danger'; sup.textContent = 'Supprimer';
-      sup.onclick = () => supprimerProfil(p);
-      actions.append(ren, sup);
+      const bouton = (texte, action, classe) => {
+        const b = document.createElement('button');
+        b.className = 'btn' + (classe ? ' ' + classe : '');
+        b.textContent = texte;
+        b.onclick = action;
+        return b;
+      };
+      actions.append(
+        bouton('Renommer', () => ouvrirFormulaire({type: 'renommer', id: p.id, nom: p.nom})),
+        bouton('Photo', () => { profilPourImage = p.id; $('fichierProfil').click(); }),
+        bouton(p.verrouille ? 'Code ✓' : 'Code', () => ouvrirFormulaire({type: 'code', id: p.id, nom: p.nom, verrouille: p.verrouille})),
+      );
+      if (p.image) actions.append(bouton('Retirer la photo', () => retirerImageProfil(p.id)));
+      actions.append(bouton('Supprimer', () => supprimerProfil(p), 'danger'));
       t.append(actions);
     } else {
-      t.addEventListener('click', () => choisirProfil(p.id));
+      t.addEventListener('click', () => {
+        if (p.verrouille) ouvrirFormulaire({type: 'ouvrir', id: p.id, nom: p.nom});
+        else choisirProfil(p.id);
+      });
     }
     zone.append(t);
   }
@@ -2211,6 +2506,7 @@ function dessinerProfils(liste){
   $('btnGerer').hidden = !liste.length;
   $('btnGerer').textContent = modeGestion ? 'Terminé' : 'Gérer les profils';
   $('btnRetourBiblio').hidden = !profil || modeGestion;
+  $('btnActualiserProfils').hidden = modeGestion;
   $('btnDossierDrive').hidden = modeGestion;
   $('btnDeconnexion').hidden = modeGestion;
   if (!liste.length && !formulaire) ouvrirFormulaire({type: 'creer'});
@@ -2219,17 +2515,30 @@ function dessinerProfils(liste){
 function ouvrirFormulaire(f){
   formulaire = f;
   $('formProfil').hidden = false;
+  const nomVisible = f.type === 'creer' || f.type === 'renommer';
+  $('nomProfil').hidden = !nomVisible;
+  $('labelProfil').hidden = !nomVisible;
+  $('champActuel').hidden = !(f.type === 'ouvrir' || (f.type === 'code' && f.verrouille));
+  $('champNouveau').hidden = f.type !== 'code';
   $('labelProfil').textContent = f.type === 'creer' ? 'Prénom du nouveau lecteur' : 'Nouveau nom pour ' + f.nom;
-  $('validerProfil').textContent = f.type === 'creer' ? 'Créer' : 'Renommer';
-  $('nomProfil').value = f.type === 'creer' ? '' : f.nom;
+  $('labelActuel').textContent = f.type === 'ouvrir' ? `Code de ${f.nom}` : 'Code actuel';
+  $('validerProfil').textContent = {creer: 'Créer', renommer: 'Renommer', code: 'Enregistrer', ouvrir: 'Ouvrir'}[f.type];
+  $('nomProfil').value = nomVisible && f.type === 'renommer' ? f.nom : '';
+  $('codeActuel').value = $('codeNouveau').value = $('codeConfirme').value = '';
   $('erreurProfil').textContent = '';
-  $('nomProfil').focus();
+  (nomVisible ? $('nomProfil') : $('champActuel').hidden ? $('codeNouveau') : $('codeActuel')).focus();
   $('formProfil').scrollIntoView({block: 'nearest'});
 }
 function fermerFormulaire(){
   formulaire = null;
   $('formProfil').hidden = true;
 }
+let profilPourImage = null;
+$('fichierProfil').addEventListener('change', e => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (f && profilPourImage) changerImageProfil(profilPourImage, f);
+});
 
 $('formProfil').addEventListener('submit', async e => {
   e.preventDefault();
@@ -2237,7 +2546,27 @@ $('formProfil').addEventListener('submit', async e => {
   const bouton = $('validerProfil');
   bouton.disabled = true;
   try {
-    if (formulaire.type === 'creer') {
+    if (formulaire.type === 'ouvrir') {
+      const cible = formulaire.id;
+      if (!(await codeCorrect(cible, $('codeActuel').value))) throw new Error('Code incorrect.');
+      fermerFormulaire();
+      await choisirProfil(cible);
+    } else if (formulaire.type === 'code') {
+      if (formulaire.verrouille && !(await codeCorrect(formulaire.id, $('codeActuel').value))) {
+        throw new Error('Code actuel incorrect.');
+      }
+      const nouveau = $('codeNouveau').value;
+      if (nouveau !== $('codeConfirme').value) throw new Error('Les deux codes ne sont pas identiques.');
+      let code = null;
+      if (nouveau) {
+        if (nouveau.length < 4) throw new Error('Le code doit faire au moins 4 caractères.');
+        const sel = b64(crypto.getRandomValues(new Uint8Array(16)));
+        code = {sel, empreinte: await empreinteCode(nouveau, sel)};
+      }
+      await api('api/profils/code', {method: 'POST', body: JSON.stringify({id: formulaire.id, code})});
+      fermerFormulaire();
+      ouvrirProfils();
+    } else if (formulaire.type === 'creer') {
       await envoyerProgression();
       const d = await api('api/profils', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({nom})});
       fermerFormulaire();
@@ -2257,6 +2586,7 @@ $('formProfil').addEventListener('submit', async e => {
 $('annulerProfil').onclick = fermerFormulaire;
 $('btnGerer').onclick = () => { modeGestion = !modeGestion; fermerFormulaire(); ouvrirProfils(); };
 $('btnRetourBiblio').onclick = fermerProfils;
+$('btnActualiserProfils').onclick = () => synchroniserProfils(false);
 $('btnProfil').onclick = ouvrirProfils;
 
 async function choisirProfil(id){
@@ -2643,21 +2973,7 @@ async function appelRelais(chemin, corps){
 
 /* ----- Résumé des lectures envoyé à l'IA ----- */
 function oeuvresPourIA(){
-  const groupes = new Map();
-  for (const l of livres) {
-    const d = l.dossier || '';
-    const isole = dossiersAvecSous.has(d);
-    const cle = isole ? 'l:' + l.id : 'd:' + d;
-    if (!groupes.has(cle)) {
-      groupes.set(cle, {
-        nom: isole ? (d ? d + '/' : '') + l.titre : d,
-        favori: isole ? favoris.has('l:' + l.id) : favoris.has('d:' + idsDossiers.get(d)),
-        livres: [],
-      });
-    }
-    groupes.get(cle).livres.push(l);
-  }
-  return [...groupes.values()].sort((a, b) => collator.compare(a.nom, b.nom));
+  return groupesOeuvres();
 }
 
 function etatOeuvre(g){
