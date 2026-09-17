@@ -716,7 +716,7 @@ const R = {livre: null, total: 0, index: 0, step: 1, mode: 'single', fit: 'heigh
 /* ======================================================================
    VERSION : augmentée à chaque mise à jour du fichier
    ====================================================================== */
-const VERSION = {numero: 14, date: '2026-09-17'};
+const VERSION = {numero: 16, date: '2026-09-17'};
 
 function texteVersion(v){
   const [a, m, j] = v.date.split('-');
@@ -3321,8 +3321,12 @@ $('btnIALecture').hidden = !iaActive();
 /* ================= Discussion générale ================= */
 const CHAT = {
   dispo: false, moderateur: false, messages: [], dernier: 0, vu: 0, horloge: 0,
-  nonLus: 0, minuterie: null, enCours: false,
+  nonLus: 0, minuterie: null, enCours: false, occupe: false,
 };
+// délai avant la prochaine vérification des nouveaux messages
+// Vérification des nouveaux messages : 3 s discussion ouverte, 10 s sinon,
+// et rien quand l'application est en arrière-plan (reprise immédiate au retour)
+const rythmeChat = () => ($('panneauChat').hidden ? 10000 : 3000);
 
 function majBadgeChat(){
   const badge = $('badgeChat');
@@ -3339,7 +3343,8 @@ function planifierChat(retard){
 }
 
 async function rafraichirChat(){
-  if (!CHAT.dispo || !profil) return;
+  if (!CHAT.dispo || !profil || CHAT.occupe || document.hidden) return;
+  CHAT.occupe = true;
   try {
     const d = await appelRelais(`/chat?apres=${CHAT.dernier}&depuis=${CHAT.horloge}`);
     CHAT.moderateur = !!d.moderateur;
@@ -3365,8 +3370,10 @@ async function rafraichirChat(){
     }
   } catch (e) {
     if (!$('panneauChat').hidden) $('chatInfo').textContent = e.message;
+  } finally {
+    CHAT.occupe = false;
   }
-  planifierChat($('panneauChat').hidden ? 45000 : 5000);
+  planifierChat(rythmeChat());
 }
 
 function marquerChatLu(){
@@ -3498,7 +3505,7 @@ function fermerChat(depuisHistorique){
     fermetureEnCours = true;
     history.back();
   }
-  planifierChat(45000);
+  planifierChat(rythmeChat());
 }
 
 function ajusterSaisieChat(){
@@ -3520,7 +3527,10 @@ $('btnChatLecture').addEventListener('click', e => {
 });
 $('chatFermer').addEventListener('click', () => fermerChat(false));
 addEventListener('keydown', e => { if (e.key === 'Escape' && !$('panneauChat').hidden) fermerChat(false); });
+// on vérifie tout de suite au retour sur l'application
 document.addEventListener('visibilitychange', () => { if (!document.hidden) planifierChat(0); });
+addEventListener('focus', () => planifierChat(0));
+addEventListener('pageshow', () => planifierChat(0));
 
 demarrer();   // connexion Google, puis bibliothèque
 </script>
