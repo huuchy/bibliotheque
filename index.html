@@ -743,7 +743,7 @@ const R = {livre: null, total: 0, index: 0, step: 1, mode: 'single', fit: 'heigh
 /* ======================================================================
    VERSION : augmentée à chaque mise à jour du fichier
    ====================================================================== */
-const VERSION = {numero: 18, date: '2026-09-17'};
+const VERSION = {numero: 19, date: '2026-09-17'};
 
 function texteVersion(v){
   const [a, m, j] = v.date.split('-');
@@ -790,6 +790,7 @@ const DOSSIER_MIME = 'application/vnd.google-apps.folder';
 const API_DRIVE = 'https://www.googleapis.com/drive/v3/';
 const API_ENVOI = 'https://www.googleapis.com/upload/drive/v3/files';
 const FICHIER_DONNEES = 'bibliotheque-donnees.json';
+const FICHIER_CATALOGUE = 'bibliotheque-catalogue.json';
 const COULEURS = ['#f2c230', '#3fb7c9', '#ef7a85', '#8fd16a', '#b79cff', '#ff9f43', '#5ea8ff', '#e6e1d3'];
 const IMG_RE = /\.(jpe?g|png|gif|webp|avif|bmp)$/i;
 const MIME_IMG = {jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', avif: 'image/avif', bmp: 'image/bmp'};
@@ -1043,21 +1044,28 @@ function urlPage(id, i){
 }
 
 /* ---------- Couvertures (mémorisées dans l'espace privé de l'application) ---------- */
-async function listerCouverturesSauvees(){
-  const m = new Map();
+// Un seul inventaire de l'espace privé : données, catalogue et couvertures
+async function inventaireAppData(){
+  const fichiers = [];
   let pageToken;
   do {
     const r = await drive('files', {params: {
-      spaces: 'appDataFolder', q: "name contains 'couv-'",
-      fields: 'nextPageToken, files(id,name)', pageSize: 1000, pageToken,
+      spaces: 'appDataFolder', fields: 'nextPageToken, files(id,name)', pageSize: 1000, pageToken,
     }});
-    for (const f of r.files) {
-      const x = f.name.match(/^couv-(.+)-(\d+)\.jpg$/);
-      if (x) m.set(x[1], {fichier: f.id, mtime: Number(x[2])});
-    }
+    fichiers.push(...r.files);
     pageToken = r.nextPageToken;
   } while (pageToken);
-  return m;
+  const couvertures = new Map();
+  let donnees = null, catalogue = null;
+  for (const f of fichiers) {
+    if (f.name === FICHIER_DONNEES) donnees = f.id;
+    else if (f.name === FICHIER_CATALOGUE) catalogue = f.id;
+    else {
+      const x = f.name.match(/^couv-(.+)-(\d+)\.jpg$/);
+      if (x) couvertures.set(x[1], {fichier: f.id, mtime: Number(x[2])});
+    }
+  }
+  return {donnees, catalogue, couvertures};
 }
 
 const fileTaches = [];
@@ -1145,9 +1153,13 @@ async function listerBibliotheque(){
   let niveau = [racine.id];
   while (niveau.length) {
     const suivant = [];
-    for (let k = 0; k < niveau.length; k += 30) {
-      const paquet = niveau.slice(k, k + 30);
+    const paquets = [];
+    for (let k = 0; k < niveau.length; k += 30) paquets.push(niveau.slice(k, k + 30));
+
+    // un paquet = une interrogation Drive ; on en lance plusieurs de front
+    const interroger = async paquet => {
       const q = '(' + paquet.map(id => `'${id}' in parents`).join(' or ') + ') and trashed = false';
+      const trouves = [];
       let pageToken;
       do {
         const r = await drive('files', {params: {
@@ -1155,29 +1167,36 @@ async function listerBibliotheque(){
           fields: 'nextPageToken, files(id,name,mimeType,size,modifiedTime,parents)',
           supportsAllDrives: true, includeItemsFromAllDrives: true,
         }});
-        for (const f of r.files) {
-          const parent = (f.parents || []).find(id => paquet.includes(id));
-          if (parent === undefined) continue;
-          const cheminParent = dossiers.get(parent);
-          const nom = f.name.replace(/\//g, '-');
-          if (f.mimeType === DOSSIER_MIME) {
-            if (!dossiers.has(f.id)) {
-              dossiers.set(f.id, cheminParent ? cheminParent + '/' + nom : nom);
-              suivant.push(f.id);
-            }
-          } else if (/\.(cbz|zip)$/i.test(f.name) && Number(f.size) > 0) {
-            nouveaux.set(f.id, {
-              id: f.id,
-              titre: f.name.replace(/\.(cbz|zip)$/i, '').replace(/_+/g, ' ').trim(),
-              dossier: cheminParent,
-              serie: cheminParent ? cheminParent.replace(/\//g, ' / ') : racine.name,
-              mtime: Math.floor(Date.parse(f.modifiedTime) / 1000),
-              taille: Number(f.size),
-            });
-          }
-        }
+        trouves.push(...r.files.map(f => [f, paquet]));
         pageToken = r.nextPageToken;
       } while (pageToken);
+      return trouves;
+    };
+    const lots = [];
+    for (let k = 0; k < paquets.length; k += 5) {
+      lots.push(...await Promise.all(paquets.slice(k, k + 5).map(interroger)));
+    }
+
+    for (const [f, paquet] of lots.flat()) {
+      const parent = (f.parents || []).find(id => paquet.includes(id));
+      if (parent === undefined) continue;
+      const cheminParent = dossiers.get(parent);
+      const nom = f.name.replace(/\//g, '-');
+      if (f.mimeType === DOSSIER_MIME) {
+        if (!dossiers.has(f.id)) {
+          dossiers.set(f.id, cheminParent ? cheminParent + '/' + nom : nom);
+          suivant.push(f.id);
+        }
+      } else if (/\.(cbz|zip)$/i.test(f.name) && Number(f.size) > 0) {
+        nouveaux.set(f.id, {
+          id: f.id,
+          titre: f.name.replace(/\.(cbz|zip)$/i, '').replace(/_+/g, ' ').trim(),
+          dossier: cheminParent,
+          serie: cheminParent ? cheminParent.replace(/\//g, ' / ') : racine.name,
+          mtime: Math.floor(Date.parse(f.modifiedTime) / 1000),
+          taille: Number(f.size),
+        });
+      }
     }
     niveau = suivant;
   }
@@ -1188,6 +1207,51 @@ async function listerBibliotheque(){
   }
   D.livres = nouveaux;
   D.idsDossiers = new Map([...dossiers].map(([id, chemin]) => [chemin, id]));
+}
+
+/* ---------- Catalogue mémorisé ----------
+   La liste des livres est enregistrée dans l'espace privé de l'application :
+   à l'ouverture suivante, la bibliothèque s'affiche tout de suite, puis
+   Drive est reparcouru en arrière-plan pour repérer les nouveautés. */
+let idCatalogue = null;
+
+function signatureCatalogue(){
+  return [...D.livres.values()].map(l => l.id + ':' + l.mtime).sort().join(',');
+}
+
+async function lireCatalogue(){
+  try {
+    const r = await drive('files', {params: {
+      spaces: 'appDataFolder', q: `name = '${FICHIER_CATALOGUE}'`, fields: 'files(id)', pageSize: 10}});
+    if (!r.files.length) return null;
+    idCatalogue = r.files[0].id;
+    return await drive('files/' + idCatalogue, {params: {alt: 'media'}});
+  } catch {
+    return null;
+  }
+}
+
+function appliquerCatalogue(c){
+  D.nomRacine = c.nom || D.nomRacine;
+  D.livres = new Map((c.livres || []).map(l => [l.id, l]));
+  D.idsDossiers = new Map(Object.entries(c.dossiers || {}));
+}
+
+async function ecrireCatalogue(){
+  const contenu = JSON.stringify({
+    racine: D.racine, nom: D.nomRacine, horodatage: Date.now(),
+    livres: [...D.livres.values()], dossiers: Object.fromEntries(D.idsDossiers || []),
+  });
+  try {
+    if (idCatalogue) {
+      await drive(`${API_ENVOI}/${idCatalogue}`, {method: 'PATCH', params: {uploadType: 'media'},
+        body: contenu, headers: {'Content-Type': 'application/json'}});
+    } else {
+      idCatalogue = (await televerser(FICHIER_CATALOGUE, new Blob([contenu], {type: 'application/json'}), 'application/json')).id;
+    }
+  } catch (e) {
+    console.warn('Catalogue non enregistré :', e.message);
+  }
 }
 
 /* ---------- Profils et progression (fichier privé dans le Drive) ---------- */
@@ -1310,7 +1374,10 @@ async function routeur(url, o){
     return {profils: Object.keys(profils).map(resume), actuel: D.profilActuel};
   }
   if (chemin === 'api/livres') {
-    if (requete.includes('actualiser') || !D.livres.size) await listerBibliotheque();
+    if (requete.includes('actualiser') || !D.livres.size) {
+      await listerBibliotheque();
+      ecrireCatalogue();
+    }
     const pid = D.profilActuel;
     const p = pid && profils[pid];
     return {
@@ -1469,11 +1536,14 @@ $('formDossier').addEventListener('submit', async e => {
   await ouvrirRacine(id);
 });
 
-async function ouvrirRacine(id){
+async function ouvrirRacine(id, cacheConnu){
   const ancien = D.racine;
   D.racine = id;
+  const cache = cacheConnu !== undefined ? cacheConnu : await lireCatalogue();
+  const utilisable = cache && cache.racine === id && (cache.livres || []).length;
   try {
-    await listerBibliotheque();
+    if (utilisable) appliquerCatalogue(cache);   // affichage immédiat
+    else await listerBibliotheque();
   } catch (e) {
     D.racine = ancien;
     return demanderDossier(e.message);
@@ -1493,16 +1563,42 @@ async function ouvrirRacine(id){
   cacherConnexion();
   etat('', 'Chargement de la bibliothèque…');
   charger(false);
+  if (utilisable) actualiserEnFond();
+  else ecrireCatalogue();
+}
+
+// Reparcourt Drive sans bloquer l'affichage ; ne rafraîchit que si quelque chose a changé
+async function actualiserEnFond(){
+  const avant = signatureCatalogue();
+  try {
+    await listerBibliotheque();
+  } catch (e) {
+    console.warn('Actualisation en arrière-plan impossible :', e.message);
+    return;
+  }
+  if (signatureCatalogue() !== avant) {
+    ecrireCatalogue();
+    charger(false);
+    notifier('Bibliothèque mise à jour.');
+  }
 }
 
 async function apresConnexion(){
   $('aideGoogle').textContent = 'Lecture de vos données…';
   $('btnConnexion').hidden = true;
-  await chargerDonnees();
-  D.couvSauvees = listerCouverturesSauvees().catch(() => new Map());
+  const inventaire = await inventaireAppData();
+  D.fichierDonnees = inventaire.donnees;
+  idCatalogue = inventaire.catalogue;
+  D.couvSauvees = Promise.resolve(inventaire.couvertures);
+  // les deux fichiers sont lus en même temps
+  const [donnees, cache] = await Promise.all([
+    inventaire.donnees ? drive('files/' + inventaire.donnees, {params: {alt: 'media'}}).catch(() => null) : null,
+    inventaire.catalogue ? drive('files/' + inventaire.catalogue, {params: {alt: 'media'}}).catch(() => null) : null,
+  ]);
+  D.donnees = normaliser(donnees || {});
   const racine = idDossier(CONFIG.DOSSIER) || D.donnees.racine;
   if (!racine) return demanderDossier();
-  await ouvrirRacine(racine);
+  await ouvrirRacine(racine, cache);
 }
 
 $('btnConnexion').addEventListener('click', async () => {
