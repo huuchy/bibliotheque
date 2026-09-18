@@ -743,7 +743,7 @@ const R = {livre: null, total: 0, index: 0, step: 1, mode: 'single', fit: 'heigh
 /* ======================================================================
    VERSION : augmentée à chaque mise à jour du fichier
    ====================================================================== */
-const VERSION = {numero: 19, date: '2026-09-17'};
+const VERSION = {numero: 20, date: '2026-09-17'};
 
 function texteVersion(v){
   const [a, m, j] = v.date.split('-');
@@ -803,6 +803,10 @@ const D = {
   livres: new Map(),        // id Drive -> livre
   index: new Map(),         // id -> Promise<liste des pages>
   couvertures: new Map(),   // id -> Promise<url>
+  vignettes: new Map(),     // id -> url d'affichage
+  idsPaquets: new Map(),    // numéro de paquet -> fichier Drive
+  paquets: new Map(),       // numéro -> Promise de chargement
+  contenuPaquets: new Map(),// numéro -> vignettes en base64
   couvSauvees: Promise.resolve(new Map()),
   donnees: null, fichierDonnees: null, profilActuel: null,
 };
@@ -934,8 +938,11 @@ class FichierDrive {
 }
 
 async function indexZip(f){
-  const longueur = Math.min(f.size, 65557);
-  const fin = new DataView(await f.lire(f.size - longueur, f.size));
+  // on lit large en une fois : le sommaire du ZIP est presque toujours dans cette zone
+  const longueur = Math.min(f.size, 262144);
+  const debutLecture = f.size - longueur;
+  const tampon = await f.lire(debutLecture, f.size);
+  const fin = new DataView(tampon);
   let eocd = -1;
   for (let i = longueur - 22; i >= 0; i--) {
     if (fin.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
@@ -954,7 +961,10 @@ async function indexZip(f){
       }
     }
   }
-  const cd = new DataView(await f.lire(debutCD, debutCD + tailleCD));
+  // sommaire déjà présent dans ce qu'on a lu ? sinon, une requête de plus
+  const cd = debutCD >= debutLecture
+    ? new DataView(tampon.slice(debutCD - debutLecture, debutCD - debutLecture + tailleCD))
+    : new DataView(await f.lire(debutCD, debutCD + tailleCD));
   const dec = new TextDecoder();
   const entrees = [];
   let p = 0;
@@ -1056,16 +1066,19 @@ async function inventaireAppData(){
     pageToken = r.nextPageToken;
   } while (pageToken);
   const couvertures = new Map();
+  const paquets = new Map();
   let donnees = null, catalogue = null;
   for (const f of fichiers) {
     if (f.name === FICHIER_DONNEES) donnees = f.id;
     else if (f.name === FICHIER_CATALOGUE) catalogue = f.id;
     else {
+      const paquet = f.name.match(/^vignettes-(\d+)\.json$/);
+      if (paquet) { paquets.set(Number(paquet[1]), f.id); continue; }
       const x = f.name.match(/^couv-(.+)-(\d+)\.jpg$/);
       if (x) couvertures.set(x[1], {fichier: f.id, mtime: Number(x[2])});
     }
   }
-  return {donnees, catalogue, couvertures};
+  return {donnees, catalogue, couvertures, paquets};
 }
 
 const fileTaches = [];
@@ -1074,7 +1087,7 @@ function enFile(tache){
   return new Promise((res, rej) => { fileTaches.push({tache, res, rej}); pomper(); });
 }
 function pomper(){
-  while (tachesActives < 4 && fileTaches.length) {
+  while (tachesActives < 6 && fileTaches.length) {
     const {tache, res, rej} = fileTaches.shift();
     tachesActives++;
     tache().then(res, rej).finally(() => { tachesActives--; pomper(); });
@@ -1093,29 +1106,77 @@ async function reduire(blob){
   } catch { return blob; }
 }
 
+/* ----- Vignettes regroupées en paquets -----
+   Une couverture seule = une requête ; à 300 séries, l'attente devient longue.
+   Les vignettes sont donc rassemblées par paquets de 60 dans l'espace privé :
+   un seul téléchargement affiche 60 couvertures. */
+const TAILLE_PAQUET = 60;
+
+function urlDepuisBase64(b64){
+  const binaire = atob(b64);
+  const octets = new Uint8Array(binaire.length);
+  for (let i = 0; i < binaire.length; i++) octets[i] = binaire.charCodeAt(i);
+  return URL.createObjectURL(new Blob([octets], {type: 'image/jpeg'}));
+}
+const base64DeBlob = blob => new Promise((res, rej) => {
+  const fr = new FileReader();
+  fr.onload = () => res(String(fr.result).split(',')[1]);
+  fr.onerror = rej;
+  fr.readAsDataURL(blob);
+});
+
+function chargerPaquet(numero){
+  if (D.paquets.has(numero)) return D.paquets.get(numero);
+  const fichier = D.idsPaquets.get(numero);
+  if (!fichier) return Promise.resolve();
+  const p = drive('files/' + fichier, {params: {alt: 'media'}}).then(contenu => {
+    D.contenuPaquets.set(numero, contenu || {});
+    for (const [id, b64] of Object.entries(contenu || {})) {
+      if (!D.vignettes.has(id)) D.vignettes.set(id, urlDepuisBase64(b64));
+    }
+    placerCouvertures();
+  }).catch(() => { D.paquets.delete(numero); });
+  D.paquets.set(numero, p);
+  return p;
+}
+
+// Place les vignettes déjà connues dans les images affichées
+function placerCouvertures(){
+  for (const img of document.querySelectorAll('img[data-livre]:not([data-pret])')) {
+    const u = D.vignettes.get(img.dataset.livre);
+    if (u) { img.src = u; img.dataset.pret = '1'; }
+  }
+}
+
 async function produireCouverture(id){
   const l = D.livres.get(id);
   const sauvees = await D.couvSauvees;
   const sauvee = sauvees.get(id);
   if (sauvee && sauvee.mtime === l.mtime) {
-    try {
-      const r = await drive('files/' + sauvee.fichier, {params: {alt: 'media'}, brut: true});
-      return URL.createObjectURL(await r.blob());
-    } catch {}
+    // ancienne vignette isolée : on la réutilise, puis on la range dans un paquet
+    const r = await drive('files/' + sauvee.fichier, {params: {alt: 'media'}, brut: true});
+    const blob = await r.blob();
+    rangerDansPaquet(id, blob).then(() => {
+      sauvees.delete(id);
+      drive('files/' + sauvee.fichier, {method: 'DELETE', brut: true}).catch(() => {});
+    });
+    return blob;
   }
   const pages = await pagesDe(id);
   if (!pages.length) throw new Error('Aucune image.');
   const vignette = await reduire(await extraire(new FichierDrive(l.id, l.taille), pages[0]));
-  televerser(`couv-${id}-${l.mtime}.jpg`, vignette, 'image/jpeg').then(r => {
-    if (sauvee) drive('files/' + sauvee.fichier, {method: 'DELETE', brut: true}).catch(() => {});
-    sauvees.set(id, {fichier: r.id, mtime: l.mtime});
-  }).catch(() => {});
-  return URL.createObjectURL(vignette);
+  rangerDansPaquet(id, vignette);
+  return vignette;
 }
 
 function urlCouverture(id){
+  if (D.vignettes.has(id)) return Promise.resolve(D.vignettes.get(id));
   if (!D.couvertures.has(id)) {
-    const p = enFile(() => produireCouverture(id));
+    const p = enFile(() => produireCouverture(id)).then(blob => {
+      const u = URL.createObjectURL(blob);
+      D.vignettes.set(id, u);
+      return u;
+    });
     p.catch(() => D.couvertures.delete(id));
     D.couvertures.set(id, p);
   }
@@ -1127,15 +1188,89 @@ const obsCouvertures = new IntersectionObserver(entrees => {
     if (!en.isIntersecting) continue;
     obsCouvertures.unobserve(en.target);
     const img = en.target;
-    urlCouverture(img.dataset.livre).then(u => { img.src = u; }).catch(() => img.remove());
+    const id = img.dataset.livre;
+    const livre = D.livres.get(id);
+    const suite = () => urlCouverture(id)
+      .then(u => { img.src = u; img.dataset.pret = '1'; })
+      .catch(() => img.remove());
+    // le paquet du livre apporte d'un coup les couvertures voisines
+    if (livre && livre.p !== undefined && D.idsPaquets.has(livre.p) && !D.vignettes.has(id)) {
+      chargerPaquet(livre.p).then(() => { if (!img.dataset.pret) suite(); });
+    } else {
+      suite();
+    }
   }
-}, {rootMargin: '400px'});
+}, {rootMargin: '600px'});
 
 function afficherCouverture(img, id){
   img.removeAttribute('loading');
   img.dataset.livre = id;
+  const connue = D.vignettes.get(id);
+  if (connue) { img.src = connue; img.dataset.pret = '1'; return; }
   obsCouvertures.observe(img);
 }
+
+/* ----- Écriture des paquets ----- */
+const aRanger = new Map();       // id -> vignette en base64
+let minuteriePaquet = null;
+let ecritureEnCours = Promise.resolve();
+
+async function rangerDansPaquet(id, blob){
+  try {
+    aRanger.set(id, await base64DeBlob(blob));
+  } catch { return; }
+  clearTimeout(minuteriePaquet);
+  minuteriePaquet = setTimeout(viderAttentePaquets, aRanger.size >= 25 ? 0 : 6000);
+}
+
+function numeroPaquetDisponible(){
+  let numero = 0;
+  for (const [n, contenu] of D.contenuPaquets) {
+    if (Object.keys(contenu).length < TAILLE_PAQUET) return n;
+    numero = Math.max(numero, n + 1);
+  }
+  for (const n of D.idsPaquets.keys()) numero = Math.max(numero, n + 1);
+  return numero;
+}
+
+function viderAttentePaquets(){
+  clearTimeout(minuteriePaquet);
+  if (!aRanger.size) return;
+  ecritureEnCours = ecritureEnCours.then(ecrirePaquets).catch(e => console.warn('Vignettes non enregistrées :', e.message));
+  return ecritureEnCours;
+}
+
+async function ecrirePaquets(){
+  while (aRanger.size) {
+    const numero = numeroPaquetDisponible();
+    // un paquet existant doit être relu avant d'être complété
+    if (D.idsPaquets.has(numero) && !D.contenuPaquets.has(numero)) await chargerPaquet(numero);
+    const contenu = D.contenuPaquets.get(numero) || {};
+    let place = TAILLE_PAQUET - Object.keys(contenu).length;
+    if (place <= 0) { D.contenuPaquets.set(numero, contenu); continue; }
+    for (const [id, b64] of [...aRanger]) {
+      if (place <= 0) break;
+      contenu[id] = b64;
+      const livre = D.livres.get(id);
+      if (livre) livre.p = numero;
+      aRanger.delete(id);
+      place--;
+    }
+    D.contenuPaquets.set(numero, contenu);
+    D.paquets.set(numero, Promise.resolve());
+    const texte = JSON.stringify(contenu);
+    if (D.idsPaquets.has(numero)) {
+      await drive(`${API_ENVOI}/${D.idsPaquets.get(numero)}`, {method: 'PATCH', params: {uploadType: 'media'},
+        body: texte, headers: {'Content-Type': 'application/json'}});
+    } else {
+      const r = await televerser(`vignettes-${String(numero).padStart(4, '0')}.json`,
+        new Blob([texte], {type: 'application/json'}), 'application/json');
+      D.idsPaquets.set(numero, r.id);
+    }
+  }
+  ecrireCatalogue();
+}
+addEventListener('pagehide', () => viderAttentePaquets());
 
 /* ---------- Parcours du dossier Drive ---------- */
 function idDossier(texte){
@@ -1188,7 +1323,9 @@ async function listerBibliotheque(){
           suivant.push(f.id);
         }
       } else if (/\.(cbz|zip)$/i.test(f.name) && Number(f.size) > 0) {
+        const connu = D.livres.get(f.id);
         nouveaux.set(f.id, {
+          p: connu && connu.mtime === Math.floor(Date.parse(f.modifiedTime) / 1000) ? connu.p : undefined,
           id: f.id,
           titre: f.name.replace(/\.(cbz|zip)$/i, '').replace(/_+/g, ' ').trim(),
           dossier: cheminParent,
@@ -1590,6 +1727,7 @@ async function apresConnexion(){
   D.fichierDonnees = inventaire.donnees;
   idCatalogue = inventaire.catalogue;
   D.couvSauvees = Promise.resolve(inventaire.couvertures);
+  D.idsPaquets = inventaire.paquets;
   // les deux fichiers sont lus en même temps
   const [donnees, cache] = await Promise.all([
     inventaire.donnees ? drive('files/' + inventaire.donnees, {params: {alt: 'media'}}).catch(() => null) : null,
